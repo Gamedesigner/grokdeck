@@ -31,11 +31,18 @@ import {
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import type { Agent, Message, Preferences, Snapshot } from "./types";
+import type {
+  Agent,
+  Message,
+  Preferences,
+  Snapshot,
+  ReleaseStatus,
+} from "./types";
 import { demoSnapshot } from "./demo";
 import "./styles.css";
 
 const defaults: Preferences = {
+  checkReleases: true,
   theme: "dark",
   accent: "violet",
   density: "comfortable",
@@ -122,6 +129,35 @@ function App() {
       supportedSourceVersion: "0.75.0",
     });
   const [activityFilter, setActivityFilter] = useState(false);
+  const [releaseStatus, setReleaseStatus] = useState<ReleaseStatus | null>(
+    null,
+  );
+  const [releaseChecking, setReleaseChecking] = useState(false);
+  const checkReleases = async (force = false) => {
+    if (!bridge?.checkReleases) return;
+    setReleaseChecking(true);
+    try {
+      setReleaseStatus(await bridge.checkReleases(force));
+    } catch {
+      setReleaseStatus({
+        status: "unavailable",
+        currentVersion: null,
+        version: null,
+        checkedAt: Date.now(),
+        message: "Could not check the official update service.",
+      });
+    } finally {
+      setReleaseChecking(false);
+    }
+  };
+  useEffect(() => {
+    if (loading || demo || !prefs.checkReleases || !bridge?.checkReleases)
+      return;
+    void checkReleases();
+    const timer = setInterval(() => void checkReleases(), 6 * 3600000);
+    return () => clearInterval(timer);
+  }, [loading, demo, prefs.checkReleases]);
+
   const transcript = useRef<HTMLDivElement>(null),
     searchInput = useRef<HTMLInputElement>(null),
     prefsRef = useRef(prefs),
@@ -540,6 +576,25 @@ function App() {
               }}
             >
               Return to real workspace <ArrowUpRight size={13} />
+            </button>
+          </div>
+        )}
+        {releaseStatus?.status === "available" && !demo && (
+          <div className="release-banner">
+            <ArrowUpRight size={16} />
+            <span>
+              <strong>
+                Grok Bot {releaseStatus.version}{" "}
+                {releaseStatus.currentVersion
+                  ? "is available"
+                  : "is offered by the official feed"}
+                .
+              </strong>{" "}
+              Update in Grok Bot when ready. Compatibility with this version has
+              not been verified.
+            </span>
+            <button className="text-button" onClick={() => setSettings(true)}>
+              Details
             </button>
           </div>
         )}
@@ -1211,10 +1266,44 @@ function App() {
                 <strong>{info.supportedSourceVersion}</strong>
               </div>
               <p>
-                Refresh checks the local version. A change from the tested
-                version shows a compatibility notice. This build does not check
-                upstream release feeds or install updates.
+                Release checks contact Grok Bot’s official update service with
+                your platform, version, and a separate random rollout ID. No
+                account credentials or conversation text are sent. Availability
+                does not establish compatibility. Nothing is downloaded or
+                installed.
               </p>
+              <div className="release-settings">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={prefs.checkReleases}
+                    onChange={(e) => save({ checkReleases: e.target.checked })}
+                  />{" "}
+                  Check for Grok Bot releases when the app opens and every six
+                  hours
+                </label>
+                <button
+                  className="button"
+                  disabled={releaseChecking}
+                  onClick={() => void checkReleases(true)}
+                >
+                  <RefreshCw
+                    size={14}
+                    className={releaseChecking ? "spin" : ""}
+                  />
+                  {releaseChecking ? "Checking…" : "Check Grok Bot releases"}
+                </button>
+                {releaseStatus && (
+                  <p role="status">
+                    {releaseStatus.message}
+                    <br />
+                    <small>
+                      Checked {date(releaseStatus.checkedAt)} · availability
+                      does not establish compatibility.
+                    </small>
+                  </p>
+                )}
+              </div>
               <hr />
               <h3>Your data</h3>
               <p>

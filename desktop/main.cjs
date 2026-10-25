@@ -14,7 +14,9 @@ let window,
   adapter,
   prefs = {},
   snapshot;
+let releaseChecker, releaseStatus, releasePending;
 const defaults = {
+  checkReleases: true,
   theme: "dark",
   accent: "violet",
   density: "comfortable",
@@ -59,6 +61,7 @@ function validPrefs(patch) {
   const result = {};
   for (const key of [
     "theme",
+    "checkReleases",
     "accent",
     "density",
     "fontSize",
@@ -69,6 +72,8 @@ function validPrefs(patch) {
     "drafts",
   ])
     if (key in patch) result[key] = patch[key];
+  if ("checkReleases" in result && typeof result.checkReleases !== "boolean")
+    throw new Error("Invalid release preference");
   if ("theme" in result && !["dark", "light", "system"].includes(result.theme))
     throw new Error("Invalid theme");
   if (
@@ -124,6 +129,33 @@ async function boot() {
   } catch {
     prefs = { ...defaults };
   }
+  releaseChecker = await import(
+    pathToFileURL(path.join(__dirname, "releases.mjs")).href
+  );
+  register("deck:check-releases", async (force = false) => {
+    if (typeof force !== "boolean") throw new Error("Invalid request");
+    const source = await getSnapshot();
+    if (
+      !force &&
+      releaseStatus &&
+      releaseStatus.currentVersion === source.source.version &&
+      Date.now() - releaseStatus.checkedAt < 6 * 3600000
+    )
+      return releaseStatus;
+    if (releasePending) return releasePending;
+    releasePending = (async () => {
+      const current = await getSnapshot();
+      releaseStatus = await releaseChecker.checkRelease({
+        currentVersion: current.source.version,
+      });
+      return releaseStatus;
+    })();
+    try {
+      return await releasePending;
+    } finally {
+      releasePending = null;
+    }
+  });
   register("deck:snapshot", getSnapshot);
   register("deck:preferences", () => prefs);
   register("deck:save-preferences", async (patch) => {

@@ -53,6 +53,11 @@ await fs.writeFile(
   path.join(source, "desktop-status.json"),
   JSON.stringify({ appVersion: "0.75.0" }),
 );
+await fs.mkdir(path.join(temp, "profile"), { recursive: true });
+await fs.writeFile(
+  path.join(temp, "profile", "preferences.json"),
+  JSON.stringify({ checkReleases: false }),
+);
 let desktop;
 try {
   const executablePath = process.env.GROKDECK_EXECUTABLE;
@@ -95,6 +100,42 @@ try {
   const preferences = await page.evaluate(() => window.grokdeck.preferences());
   assert.equal(preferences.notes["smoke-agent"], "Native preferences verified");
   assert.equal(preferences.drafts["smoke-agent"], "A saved local draft");
+  await desktop.evaluate(() => {
+    globalThis.fetch = async () => ({
+      status: 200,
+      ok: true,
+      text: async () => JSON.stringify({ name: "0.99.0", version: "0.99.0" }),
+    });
+  });
+  await page.getByLabel("Open settings").click();
+  await page
+    .getByRole("button", { name: "Check Grok Bot releases", exact: true })
+    .click();
+  await page
+    .getByText(
+      "Grok Bot 0.99.0 is available. Update through Grok Bot when you are ready.",
+      { exact: false },
+    )
+    .waitFor();
+  await page.getByLabel("Close settings").click();
+  assert.equal(
+    (await page.evaluate(() => window.grokdeck.checkReleases())).version,
+    "0.99.0",
+  );
+  const electronInfo = await page.evaluate(() => window.grokdeck.info());
+  const exportPath = path.join(temp, "discussion.md");
+  await desktop.evaluate(({ dialog }, target) => {
+    dialog.showSaveDialog = async () => ({ canceled: false, filePath: target });
+  }, exportPath);
+  await page.getByLabel("Export discussion", { exact: true }).click();
+  await page
+    .getByRole("status")
+    .filter({ hasText: "Discussion exported." })
+    .waitFor();
+  assert.match(
+    await fs.readFile(exportPath, "utf8"),
+    /The packaged desktop bridge works/,
+  );
   const nodeAccess = await page.evaluate(() => typeof window.require);
   assert.equal(nodeAccess, "undefined");
   let opened;
@@ -115,8 +156,8 @@ try {
   console.log(
     JSON.stringify({
       status: "passed",
-      platform: process.platform,
-      arch: process.arch,
+      platform: electronInfo.platform,
+      arch: electronInfo.arch,
       packaged: !!executablePath,
       agents: snapshot.agents.length,
       messages: snapshot.agents[0].messages.length,

@@ -10,9 +10,10 @@ A standalone desktop workspace for exploring your Grok Bot agents and discussion
 - Export an individual cached discussion as Markdown.
 - Customize dark/light/system appearance, accent color, text size, and density.
 - Detect the locally running Grok Bot version and warn when it differs from the tested adapter version.
+- Check the official stable release feed on launch and every six hours, with a manual check and an option to disable background checks.
 - Explicitly labeled example workspace for exploring the interface without local data.
 
-**Limits:** This first build is a local companion. It does not authenticate to Grok Bot's backend, send messages directly, provide live execution status, or retrieve history absent from Grok Bot's local cache. Follow-ups are copied to the clipboard and opened in Grok Bot for you to paste and send. Changes in GrokDeck never modify Grok Bot's cache. Upstream release-feed monitoring and automatic updates are not implemented.
+**Limits:** This first build is a local companion. It does not authenticate to Grok Bot's backend, send messages directly, provide live execution status, or retrieve history absent from Grok Bot's local cache. Follow-ups are copied to the clipboard and opened in Grok Bot for you to paste and send. Changes in GrokDeck never modify Grok Bot's cache. GrokDeck never downloads or installs Grok Bot updates.
 
 ## Run locally
 
@@ -65,6 +66,6 @@ Cache tests cover active-account isolation, unsupported schemas, corrupt files, 
 
 ## Privacy
 
-No telemetry, cloud sync, or credential reading. The main process reads only allowlisted cache slices and optional `desktop-status.json`. Notes, pins, drafts, and reviewed markers live in GrokDeck's own local preferences. Exported discussions and clipboard contents may contain your private text; export/copy only when you intend to share them. External images and HTML are not loaded from transcript content.
+No analytics, cloud sync, or credential reading. Optional release checks contact Grok Bot’s official update service with the platform, installed version, and a separate ephemeral rollout ID; they send no account credentials or conversation content. The main process reads only allowlisted cache slices and optional `desktop-status.json`. Notes, pins, drafts, and reviewed markers live in GrokDeck's own local preferences. Exported discussions and clipboard contents may contain your private text; export/copy only when you intend to share them. External images and HTML are not loaded from transcript content.
 
 See [architecture and investigation notes](docs/architecture.md) and [remaining work](docs/roadmap.md).

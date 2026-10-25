@@ -1,6 +1,8 @@
 const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("grokdeck", {
   snapshot: () => ipcRenderer.invoke("deck:snapshot"),
+  checkReleases: (force = false) =>
+    ipcRenderer.invoke("deck:check-releases", force),
   preferences: () => ipcRenderer.invoke("deck:preferences"),
   savePreferences: (patch) =>
     ipcRenderer.invoke("deck:save-preferences", patch),
