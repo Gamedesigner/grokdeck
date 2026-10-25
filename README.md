@@ -13,7 +13,7 @@ A standalone desktop workspace for exploring your Grok Bot agents and discussion
 - Check the official stable release feed on launch and every six hours, with a manual check and an option to disable background checks.
 - Explicitly labeled example workspace for exploring the interface without local data.
 
-**Limits:** This first build is a local companion. It does not authenticate to Grok Bot's backend, send messages directly, provide live execution status, or retrieve history absent from Grok Bot's local cache. Follow-ups are copied to the clipboard and opened in Grok Bot for you to paste and send. Changes in GrokDeck never modify Grok Bot's cache. GrokDeck never downloads or installs Grok Bot updates.
+**Modes:** The default desktop view reads the local cache. An opt-in experimental live bridge now supports current discussions, sending text and replies with emoji, checking delivery, requesting a run interruption, provided bot pictures, and a read-only per-bot computer status list. On the desktop choose **Connect live** after starting `npm run bridge:live`. Replies refresh every two seconds while the discussion is visible. This is version-specific integration verified against Grok Bot 0.75.0, not a documented public API. Approvals, attachments, and richer actions still use Grok Bot. GrokDeck never modifies its cache or installs Grok Bot updates.
 
 ## Run locally
 
@@ -66,10 +66,20 @@ Cache tests cover active-account isolation, unsupported schemas, corrupt files, 
 
 ## Privacy
 
-No analytics, cloud sync, or credential reading. Optional release checks contact Grok Bot’s official update service with the platform, installed version, and a separate ephemeral rollout ID; they send no account credentials or conversation content. The main process reads only allowlisted cache slices and optional `desktop-status.json`. Notes, pins, drafts, and reviewed markers live in GrokDeck's own local preferences. Exported discussions and clipboard contents may contain your private text; export/copy only when you intend to share them. External images and HTML are not loaded from transcript content.
+No analytics or cloud sync. The default cache adapter reads no credentials. The opt-in live helper reads the active Grok Bot session through OS secure storage on the Mac, keeps decrypted credentials in memory, and sends them only to the observed vendor backend/gateway. The phone receives a separate GrokDeck pairing key, never the Grok Bot session. Optional release checks contact Grok Bot’s official update service with the platform, installed version, and a separate ephemeral rollout ID; they send no account credentials or conversation content. Cache mode reads only allowlisted cache slices and optional `desktop-status.json`. Live mode uses a separate authenticated loopback bridge; the optional phone proxy binds one explicit private LAN address over pinned HTTPS. Notes, pins, drafts, and reviewed markers live in GrokDeck's own local preferences. Exported discussions and clipboard contents may contain your private text; export/copy only when you intend to share them. External images and HTML are not loaded from transcript content.
 
 See [architecture and investigation notes](docs/architecture.md) and [remaining work](docs/roadmap.md).
 
 ## iOS prototype
 
-A native SwiftUI companion and read-only local bridge are in development. See [iOS setup, API, and limitations](docs/ios-prototype.md). The [private Notion project page](https://app.notion.com/p/404d9d2a6a048108b540e65f5c033920) tracks verified work and remaining device checks.
+A native SwiftUI companion supports cached and experimental live discussion modes. The physical iPhone is development-signed and paired over private Wi-Fi. An authorized isolated test was accepted by the real gateway and returned `GROKDECK_OK`. See [iOS setup, API, and limitations](docs/ios-prototype.md). The [private Notion project page](https://app.notion.com/p/404d9d2a6a048108b540e65f5c033920) tracks verified work and remaining device checks.
+
+## Experimental live bridge
+
+```sh
+npm run bridge:live
+# In a separate terminal, for the paired phone on your trusted home network:
+GROKDECK_LAN_HOST=YOUR_MAC_PRIVATE_IPV4 npm run bridge:lan
+```
+
+Stop the default `npm run bridge` first because both use port 43872. The Mac helper may request Keychain access. It binds its initial account and team; restart it explicitly after switching either in Grok Bot. Do not put tokens into command arguments, source, chat, or Notion. See [connection evidence and limits](docs/live-connection.md) and [iPhone pairing](docs/ios-prototype.md). The live bridge is a developer command, not an automatically enabled service in the desktop installer.

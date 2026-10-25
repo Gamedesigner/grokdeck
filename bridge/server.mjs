@@ -4,6 +4,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import { pathToFileURL } from "node:url";
+import { liveRoute } from "./live-routes.mjs";
 import { readCache } from "../desktop/cache.mjs";
 
 export const DEFAULT_PORT = 43872;
@@ -41,6 +42,7 @@ export async function loadPairingToken(
 export function createBridge({
   token,
   sourcePath,
+  gateway,
   reader = () => readCache(sourcePath),
 } = {}) {
   if (typeof token !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(token))
@@ -75,7 +77,7 @@ export function createBridge({
       });
     if (!authorized(req.headers.authorization, token))
       return respond(401, { error: "Pairing required." });
-    if (req.method !== "GET")
+    if (!gateway && req.method !== "GET")
       return respond(405, { error: "This bridge is read-only." });
     let url;
     try {
@@ -88,6 +90,13 @@ export function createBridge({
         error:
           "Query parameters are not supported. Send pairing credentials only in the Authorization header.",
       });
+    if (gateway) {
+      try { return await (gateway.withAccount ? gateway.withAccount(()=>liveRoute({req,url,respond,gateway})) : liveRoute({req,url,respond,gateway})); }
+      catch(error) {
+        const invalid=["invalid_request","nonce_reused"].includes(error.code);
+        return respond(invalid?400:503,{error:invalid?"Invalid message or reused message identifier.":"Live gateway unavailable. Check Grok Bot on the Mac and reconnect.",code:error.code||"gateway-unavailable"});
+      }
+    }
     if (url.pathname === "/v1/health")
       return respond(200, {
         apiVersion: 1,
@@ -155,11 +164,12 @@ export async function startBridge({
   port = DEFAULT_PORT,
   credentialDirectory,
   sourcePath,
+  gateway,
 } = {}) {
   if (!Number.isSafeInteger(port) || port < 0 || port > 65535)
     throw new Error("Invalid port");
   const { token, file } = await loadPairingToken(credentialDirectory);
-  const server = createBridge({ token, sourcePath });
+  const server = createBridge({ token, sourcePath, gateway });
   await new Promise((resolve, reject) => {
     server.once("error", reject);
     server.listen(port, "127.0.0.1", resolve);

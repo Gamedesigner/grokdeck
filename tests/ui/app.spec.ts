@@ -25,6 +25,7 @@ test("search, discussion history, private notes, drafts and appearance persist",
   await page
     .getByRole("button", { name: /Explore an example workspace/ })
     .click();
+  await page.getByRole("button", {name:"Search agents",exact:true}).click();
   await page
     .getByLabel("Search agents and discussions")
     .fill("A little context");
@@ -152,6 +153,7 @@ test("100-agent cache fixture stays searchable and untrusted HTML does not execu
   });
   await page.goto("/");
   await expect(page.locator(".agent-row")).toHaveCount(120);
+  await page.getByRole("button", {name:"Search agents",exact:true}).click();
   await page.getByLabel("Search agents and discussions").fill("needle deep");
   await expect(page.locator(".agent-row")).toHaveCount(1);
   await page.locator(".agent-main").click();

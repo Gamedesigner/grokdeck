@@ -16,7 +16,9 @@
     "package:win": "npm run build && electron-builder --win nsis zip --x64 --publish never",
     "package:dir": "npm run build && electron-builder --dir --publish never",
     "test:desktop": "node scripts/desktop-smoke.mjs",
-    "bridge": "node bridge/server.mjs"
+    "bridge": "node bridge/server.mjs",
+    "bridge:live": "electron bridge/live.cjs",
+    "bridge:lan": "node bridge/lan.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.577.0",

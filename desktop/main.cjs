@@ -15,6 +15,16 @@ let window,
   prefs = {},
   snapshot;
 let releaseChecker, releaseStatus, releasePending;
+const liveClient = require('./live.cjs').createLiveClient();
+let liveEnabled = false;
+const liveMessages = new Map();
+async function getLiveSnapshot() {
+  const response = await liveClient.roster();
+  return {agents: response.agents.map(a => ({...a, color: '#8a9bff', sectionId: '__live__', pinned:false,
+    unreadCount:0, messages:liveMessages.get(a.id)||[]})), sections:[], source:{...response.source,path:''}, warnings:response.warnings||[]};
+}
+function requireLive() {if(!liveEnabled)throw new Error('Connect live first');}
+
 const defaults = {
   checkReleases: true,
   theme: "dark",
@@ -156,7 +166,20 @@ async function boot() {
       releasePending = null;
     }
   });
-  register("deck:snapshot", getSnapshot);
+  register("deck:snapshot", () => liveEnabled ? getLiveSnapshot() : getSnapshot());
+  register("deck:connect-live", async () => {
+    await liveClient.health();
+    const result=await getLiveSnapshot();
+    liveEnabled=true;
+    return result;
+  });
+  register("deck:disconnect-live", async () => {liveEnabled=false;liveMessages.clear();return getSnapshot();});
+  register("deck:avatar", async id => {requireLive();return liveClient.avatar(id);});
+  register("deck:computers", async () => {requireLive();return liveClient.computers();});
+  register("deck:live-messages", async id => {requireLive();const result=await liveClient.messages(id);liveMessages.set(id,result.messages);return result;});
+  register("deck:send", async (id,prompt,nonce,replyToId) => {requireLive();return liveClient.send(id,prompt,nonce,replyToId);});
+  register("deck:acceptance", async (id,nonce) => {requireLive();return liveClient.acceptance(id,nonce);});
+  register("deck:interrupt", async id => {requireLive();return liveClient.interrupt(id);});
   register("deck:preferences", () => prefs);
   register("deck:save-preferences", async (patch) => {
     prefs = { ...prefs, ...validPrefs(patch) };
