@@ -58,6 +58,19 @@ The prototype supports agent/result search, an attention filter, cached discussi
 
 The Open in Grok Bot action uses the observed desktop route `grokbot://app/v1/agent?id=...`, checks whether iOS can open the scheme, and provides a sharing fallback. **Routing into an actual iOS Grok Bot conversation remains unverified.** A successful OS open alone would not prove the correct chat appeared.
 
-The physical iPhone's app inventory confirms Grok Bot is installed, but this work does not install the prototype or change Grok Bot on that phone. No task, message, approval, or webhook is sent.
+On October 25, 2026, a development-signed Debug build was successfully built, installed, and launched on the connected physical iPhone running iOS 26.6.1. The device process inventory confirmed GrokDeck running. This verifies device deployment, not rendered UI, bridge connectivity, or routing into Grok Bot. Grok Bot is installed on that phone; no task, message, approval, or webhook was sent.
+
+For another paired development device, generate the project and use its explicit device and signing team:
+
+```sh
+DEVELOPER_DIR=/Applications/Xcode-27.1.app/Contents/Developer \
+  xcodebuild -project ios/GrokDeck.xcodeproj -scheme GrokDeck \
+  -configuration Debug -destination 'id=YOUR_DEVICE_UDID' \
+  -derivedDataPath "$HOME/Library/Developer/Xcode/DerivedData/GrokDeckDevice" \
+  DEVELOPMENT_TEAM=YOUR_TEAM_ID -allowProvisioningUpdates \
+  -allowProvisioningDeviceRegistration build
+```
+
+Install the resulting `Debug-iphoneos/GrokDeck.app` with Xcode or `xcrun devicectl device install app --device YOUR_DEVICE_UDID APP_PATH`. USB/developer pairing supports installation and debugging; it does not automatically make the Mac's loopback bridge reachable from an ordinary iOS app.
 
 The desktop preview remains a separate app; the bridge is a development command, not an automatically enabled feature in its installer.
