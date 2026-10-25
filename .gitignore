@@ -1,0 +1,12 @@
+node_modules/
+dist/
+release/
+research/artifacts/
+research/evidence/
+.todos/
+test-results/
+playwright-report/
+.DS_Store
+*.log
+.env*
+!.env.example

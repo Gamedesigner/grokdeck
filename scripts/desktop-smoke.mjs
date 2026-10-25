@@ -1,0 +1,42 @@
+import { _electron as electron } from 'playwright';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
+import assert from 'node:assert/strict';
+import { encodeKey } from '../desktop/cache.mjs';
+
+const temp = await fs.mkdtemp(path.join(os.tmpdir(),'grokdeck-smoke-'));
+const source = path.join(temp,'Grok Bot'); const folder = path.join(source,'sand-client-persistence');
+await fs.mkdir(folder,{recursive:true});
+const put = (key,value,schemaVersion=1) => fs.writeFile(path.join(folder,encodeKey(key)),JSON.stringify({schemaVersion,value}));
+const prefix='sand.client.slice.account.smoke.';
+await put('sand.client.slice.client-meta.account-slot','smoke');
+await put(prefix+'roster.last-roster',{rows:[{id:'smoke-agent',name:'Smoke Agent',lastEntry:{text:'Desktop integration works'},lastActivityAt:Date.now(),hasUnread:true}]},4);
+await put(prefix+'transcript.replicas.smoke-agent',{entries:[{kind:'message',id:'user',role:'user',content:'Does the desktop bridge work?',timestampMs:100},{kind:'send-message',id:'answer',message:{type:'text',content:'The packaged desktop bridge works.'},timestampMs:200}],persistedAt:Date.now()});
+await fs.writeFile(path.join(source,'desktop-status.json'),JSON.stringify({appVersion:'0.75.0'}));
+let desktop;
+try {
+ const executablePath=process.env.GROKDECK_EXECUTABLE;
+ const args=executablePath ? [`--user-data-dir=${path.join(temp,'profile')}`] : ['.',`--user-data-dir=${path.join(temp,'profile')}`];
+ desktop=await electron.launch({...(executablePath?{executablePath}:{}),args,env:{...process.env,GROKDECK_DEV_URL:'',GROKDECK_SCREENSHOT:''},timeout:60000});
+ const page=await desktop.firstWindow({timeout:30000});
+ await page.waitForSelector('h1');
+ await desktop.evaluate(({dialog},selected)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[selected]});},source);
+ await page.getByLabel('Open settings').click();await page.getByRole('button',{name:'Choose folder',exact:true}).click();await page.getByLabel('Close settings').click();
+ await page.locator('.agent-main').filter({hasText:'Smoke Agent'}).click();
+ await page.getByRole('paragraph').filter({hasText:'The packaged desktop bridge works.'}).waitFor();
+ const snapshot=await page.evaluate(()=>window.grokdeck.snapshot());assert.equal(snapshot.agents.length,1);assert.equal(snapshot.agents[0].messages.length,2);
+ await page.getByLabel('Toggle private notes').click();await page.getByLabel('YOUR PRIVATE NOTES').fill('Native preferences verified');
+ await page.getByLabel('Draft follow-up').fill('A saved local draft');
+ await page.waitForTimeout(200);
+ const preferences=await page.evaluate(()=>window.grokdeck.preferences());assert.equal(preferences.notes['smoke-agent'],'Native preferences verified');
+ assert.equal(preferences.drafts['smoke-agent'],'A saved local draft');
+ const nodeAccess=await page.evaluate(()=>typeof window.require);assert.equal(nodeAccess,'undefined');
+ let opened;
+ await desktop.evaluate(({shell})=>{globalThis.__grokdeckOpened=null;shell.openExternal=async(url)=>{globalThis.__grokdeckOpened=url;};});
+ await page.getByRole('button',{name:/Continue in Grok Bot/}).click();
+ await page.waitForTimeout(150);
+ opened=await desktop.evaluate(()=>globalThis.__grokdeckOpened);assert.equal(opened,'grokbot://app/v1/agent?id=smoke-agent');
+ await fs.mkdir('test-results',{recursive:true});await page.screenshot({path:`test-results/desktop-${process.platform}-${process.arch}.png`});
+ console.log(JSON.stringify({status:'passed',platform:process.platform,arch:process.arch,packaged:!!executablePath,agents:snapshot.agents.length,messages:snapshot.agents[0].messages.length,bridge:true,preferences:true,nodeIsolation:true,handoffURL:opened}));
+} finally {if(desktop)await desktop.close();await fs.rm(temp,{recursive:true,force:true});}
