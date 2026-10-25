@@ -1714,3 +1714,49 @@ select {
     scroll-behavior: auto !important;
   }
 }
+.release-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 30px;
+  background: var(--accent-bg);
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.6;
+}
+.release-banner > svg {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.release-banner > span {
+  flex: 1;
+}
+.release-banner strong {
+  color: var(--accent);
+  font-weight: 550;
+}
+.release-banner .text-button {
+  font-size: 0.68rem;
+  padding: 0;
+}
+.release-settings label {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 0.74rem;
+  line-height: 1.7;
+  color: var(--muted);
+  margin: 15px 0;
+}
+.release-settings input {
+  accent-color: var(--accent);
+  margin-top: 4px;
+}
+.release-settings p {
+  margin: 12px 0 0;
+}
+.release-settings small {
+  font-size: 0.66rem;
+  color: var(--faint);
+}

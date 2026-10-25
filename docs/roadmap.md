@@ -16,7 +16,7 @@
 
 ## Maintainability and distribution
 
-- Discover and validate Grok Bot's upstream release metadata; notify about new releases and compare compatibility before offering an upgrade.
+- Test the adapter against new Grok Bot releases advertised by the official feed; availability notifications do not imply verified compatibility.
 - Add signed GrokDeck update manifests, rollback, and private distribution.
 - Sign Windows builds and sign/notarize Mac builds before wider distribution.
 - Add an explicit migration/backup policy for local notes and customization.

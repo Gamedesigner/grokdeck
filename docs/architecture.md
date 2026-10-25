@@ -27,7 +27,9 @@ The packaged main-core bundle declares agent activation through `grokbot://app/v
 
 GrokDeck uses its own app ID and user-data directory. Preferences contain appearance, local pins, recent selections, notes, reviewed timestamps, drafts, and an optional data-folder selection. Writes are serialized in the renderer and saved through temporary-file rename in the main process. No preference writes touch Grok Bot.
 
-The cache refreshes every 15 seconds. Cached unread/request state is explicitly labeled and never called live activity. A different locally reported Grok Bot version produces a compatibility warning. No network release check or update installation occurs.
+The cache refreshes every 15 seconds. Cached unread/request state is explicitly labeled and never called live activity. A different locally reported Grok Bot version produces a compatibility warning. The official stable update endpoint is queried on launch and every six hours while enabled, or manually from Settings. Each request uses a separate ephemeral rollout ID, never Grok Bot’s identity or credentials. Errors remain unavailable rather than being reported as up to date. No update download or installation occurs.
+
+The shipped main-core bundle defines the update base URL `https://api2.cursor.sh/updates`, with platform/track/version/rollout-ID segments. Live requests on October 25, 2026 returned stable version 0.75.8 for darwin-arm64 and win32-x64-user. That establishes availability from the feed, not adapter compatibility with 0.75.8.
 
 ## Distribution
 

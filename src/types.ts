@@ -37,7 +37,15 @@ export interface Snapshot {
   };
   warnings: string[];
 }
+export interface ReleaseStatus {
+  status: "available" | "current" | "unavailable";
+  currentVersion: string | null;
+  version: string | null;
+  checkedAt: number;
+  message: string;
+}
 export interface Preferences {
+  checkReleases: boolean;
   theme: "dark" | "light" | "system";
   accent: "violet" | "mint" | "amber" | "blue";
   density: "comfortable" | "compact";
@@ -49,6 +57,7 @@ export interface Preferences {
   drafts: Record<string, string>;
 }
 export interface Bridge {
+  checkReleases?(force?: boolean): Promise<ReleaseStatus>;
   snapshot(): Promise<Snapshot>;
   preferences(): Promise<Preferences>;
   savePreferences(patch: Partial<Preferences>): Promise<Preferences>;
