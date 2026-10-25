@@ -1,0 +1,49 @@
+name: iOS prototype checks
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      [
+        "ios/**",
+        "bridge/**",
+        "desktop/cache.mjs",
+        "tests/bridge.test.mjs",
+        ".github/workflows/ios.yml",
+      ]
+  pull_request:
+    paths:
+      [
+        "ios/**",
+        "bridge/**",
+        "desktop/cache.mjs",
+        "tests/bridge.test.mjs",
+        ".github/workflows/ios.yml",
+      ]
+permissions:
+  contents: read
+jobs:
+  ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - run: npm test
+      - name: Ensure XcodeGen
+        run: command -v xcodegen || brew install xcodegen
+      - run: cd ios && xcodegen generate
+      - name: Choose an available iPhone simulator
+        id: simulator
+        run: |
+          GROKDECK_DEVICE_ID=$(xcrun simctl list devices available --json | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(x["udid"] for group in d["devices"].values() for x in group if x["name"].startswith("iPhone") and x.get("isAvailable")))')
+          echo "device=$GROKDECK_DEVICE_ID" >> "$GITHUB_OUTPUT"
+      - name: Build and test native iOS app
+        run: xcodebuild -project ios/GrokDeck.xcodeproj -scheme GrokDeck -destination 'id=${{ steps.simulator.outputs.device }}' -derivedDataPath /tmp/GrokDeck-iOS -resultBundlePath /tmp/GrokDeck-iOS.xcresult -parallel-testing-enabled NO -jobs 2 CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: GrokDeck-iOS-test-results
+          path: /tmp/GrokDeck-iOS.xcresult
+          retention-days: 7
