@@ -69,3 +69,7 @@ Cache tests cover active-account isolation, unsupported schemas, corrupt files, 
 No analytics, cloud sync, or credential reading. Optional release checks contact Grok Bot’s official update service with the platform, installed version, and a separate ephemeral rollout ID; they send no account credentials or conversation content. The main process reads only allowlisted cache slices and optional `desktop-status.json`. Notes, pins, drafts, and reviewed markers live in GrokDeck's own local preferences. Exported discussions and clipboard contents may contain your private text; export/copy only when you intend to share them. External images and HTML are not loaded from transcript content.
 
 See [architecture and investigation notes](docs/architecture.md) and [remaining work](docs/roadmap.md).
+
+## iOS prototype
+
+A native SwiftUI companion and read-only local bridge are in development. See [iOS setup, API, and limitations](docs/ios-prototype.md). The [private Notion project page](https://app.notion.com/p/404d9d2a6a048108b540e65f5c033920) tracks verified work and remaining device checks.
