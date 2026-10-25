@@ -1,0 +1,71 @@
+{
+  "name": "grokdeck",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A personal command deck for your Grok Bot conversations",
+  "author": "Gamedesigner",
+  "license": "UNLICENSED",
+  "main": "desktop/main.cjs",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "desktop": "electron .",
+    "build": "tsc --noEmit && vite build",
+    "test": "node --test tests/*.test.mjs",
+    "test:ui": "playwright test",
+    "package:mac": "npm run build && electron-builder --mac zip dmg --arm64 --x64 --publish never",
+    "package:win": "npm run build && electron-builder --win nsis zip --x64 --publish never",
+    "package:dir": "npm run build && electron-builder --dir --publish never",
+    "test:desktop": "node scripts/desktop-smoke.mjs"
+  },
+  "dependencies": {
+    "lucide-react": "^0.577.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.0.0",
+    "electron": "45.0.0",
+    "electron-builder": "26.18.0",
+    "typescript": "^5.9.3",
+    "vite": "8.3.5"
+  },
+  "build": {
+    "appId": "com.gamedesigner.grokdeck",
+    "productName": "GrokDeck",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "desktop/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "identity": null,
+      "hardenedRuntime": true,
+      "icon": "build/icon.png"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "deleteAppDataOnUninstall": false
+    },
+    "artifactName": "GrokDeck-${version}-${os}-${arch}.${ext}"
+  },
+  "type": "module"
+}

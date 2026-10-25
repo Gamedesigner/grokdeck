@@ -1,0 +1,70 @@
+name: Build desktop apps
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:ui
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: ui-test-results
+          path: test-results
+  package:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            command: package:mac
+            name: mac
+          - os: windows-latest
+            command: package:win
+            name: windows
+    runs-on: ${{ matrix.os }}
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run ${{ matrix.command }}
+      - name: Smoke test packaged app on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:GROKDECK_EXECUTABLE = (Resolve-Path 'release/win-unpacked/GrokDeck.exe').Path
+          npm run test:desktop
+      - name: Smoke test packaged app on macOS
+        if: runner.os == 'macOS'
+        run: GROKDECK_EXECUTABLE="$PWD/release/mac-arm64/GrokDeck.app/Contents/MacOS/GrokDeck" npm run test:desktop
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GrokDeck-${{ matrix.name }}
+          path: |
+            release/*.dmg
+            release/*.zip
+            release/*.exe
+            release/*.blockmap
+          if-no-files-found: error
+          retention-days: 14
