@@ -9,7 +9,8 @@
 
 ## Complete the integration
 
-- Investigate an authenticated, supported connection for direct discussion retrieval, messaging, and live status. Do not equate a local cache with backend access.
+- Experimental direct discussion reads and text sends are verified against 0.75.0. Next validate reconnect/expiry and real-device sending under varied network conditions; no public API compatibility is promised.
+- Replace foreground transcript polling with a verified event-stream adapter when needed; preserve scrollback and pending-send semantics.
 - Keep the connection adapter separate from UI code and document version compatibility.
 - Improve attachments, permissions, agent exchanges, and non-text transcript rendering from observed schemas.
 - Verify Ghidra setup and investigate native components only when a concrete integration question depends on them.

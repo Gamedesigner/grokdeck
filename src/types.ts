@@ -56,7 +56,28 @@ export interface Preferences {
   seen: Record<string, number>;
   drafts: Record<string, string>;
 }
+export interface SendReceipt {
+  apiVersion: number;
+  clientNonce: string;
+  accepted: boolean | null;
+  status: "accepted" | "rejected" | "unknown" | "pending";
+}
+export interface ComputersResponse {
+  apiVersion:number;
+  checkedAt:number;
+  complete:boolean;
+  computers:{agentId:string;name:string;state:"absent"|"hibernated"|"running"|"unknown";windows:{index:number;label:string}[];checkedAt:number;error?:string}[];
+}
 export interface Bridge {
+  getAvatar?(id:string): Promise<string>;
+  computers?(): Promise<ComputersResponse>;
+  connectLive?(): Promise<Snapshot>;
+  disconnectLive?(): Promise<Snapshot>;
+  liveMessages?(id: string): Promise<{messages:Message[]; source:Snapshot['source']}>;
+  send?(id:string,prompt:string,nonce:string,replyToId?:string): Promise<SendReceipt>;
+  acceptance?(id:string,nonce:string): Promise<SendReceipt>;
+  interrupt?(id:string): Promise<{hadActiveRun:boolean}>;
+
   checkReleases?(force?: boolean): Promise<ReleaseStatus>;
   snapshot(): Promise<Snapshot>;
   preferences(): Promise<Preferences>;
