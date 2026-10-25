@@ -71,6 +71,13 @@ try {
     timeout: 60000,
   });
   const page = await desktop.firstWindow({ timeout: 30000 });
+  page.setDefaultTimeout(60000);
+  await desktop.evaluate(({ app, BrowserWindow }) => {
+    const window = BrowserWindow.getAllWindows()[0];
+    window.show();
+    window.focus();
+    app.focus({ steal: true });
+  });
   await page.waitForSelector("h1");
   await desktop.evaluate(({ dialog }, selected) => {
     dialog.showOpenDialog = async () => ({
@@ -82,6 +89,7 @@ try {
   await page
     .getByRole("button", { name: "Choose folder", exact: true })
     .click();
+  await page.locator(".source-path").filter({ hasText: source }).waitFor();
   await page.getByLabel("Close settings").click();
   await page.locator(".agent-main").filter({ hasText: "Smoke Agent" }).click();
   await page
