@@ -284,3 +284,28 @@ final class NoRedirect: NSObject, URLSessionTaskDelegate, Sendable {
     completionHandler: @escaping @Sendable (URLRequest?) -> Void
   ) { completionHandler(nil) }
 }
+
+struct PhoneSetup: Decodable, Sendable {
+  let grokdeck: Int
+  let endpoint: String
+  let pin: String
+  let code: String
+  static func parse(_ input: String) throws -> PhoneSetup {
+    guard input.utf8.count <= 2048,
+      let setup = try? JSONDecoder().decode(PhoneSetup.self, from: Data(input.utf8)),
+      setup.grokdeck == 1,
+      setup.code.range(of: "^[A-Za-z0-9_-]{43}$", options: .regularExpression) != nil
+    else { throw BridgeError.invalidResponse }
+    let url = try BridgeAddress.validate(setup.endpoint)
+    let parts = (url.host ?? "").split(separator: ".", omittingEmptySubsequences: false)
+    let numbers = parts.compactMap { Int($0) }
+    guard url.scheme == "https", let port = url.port, (1...65535).contains(port),
+      parts.count == 4, numbers.count == 4,
+      zip(parts,numbers).allSatisfy({ String($0.1) == $0.0 && (0...255).contains($0.1) }),
+      numbers[0] == 10 || (numbers[0] == 172 && (16...31).contains(numbers[1])) || (numbers[0] == 192 && numbers[1] == 168),
+      try BridgeCertificate.normalizedPin(setup.pin, endpoint: url) != nil
+    else { throw BridgeError.invalidEndpoint }
+    return setup
+  }
+}
+struct EnrollmentResponse: Decodable, Sendable { let apiVersion: Int; let token: String }

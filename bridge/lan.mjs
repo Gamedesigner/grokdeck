@@ -4,12 +4,12 @@ import { X509Certificate, createHash } from "node:crypto";
 import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import selfsigned from "selfsigned";
+
 import { pathToFileURL } from "node:url";
 import { authorized, loadPairingToken, DEFAULT_PORT } from "./server.mjs";
 
-const run = promisify(execFile);
+
 export const LAN_PORT = 43873;
 export function privateIPv4(value) {
   if (typeof value !== "string" || !/^(\d{1,3}\.){3}\d{1,3}$/.test(value)) return false;
@@ -47,13 +47,18 @@ export async function loadLANIdentity(host, directory = path.join(os.homedir(), 
     // Never overwrite an existing key/certificate. An incomplete identity needs operator repair.
     const members = await fs.readdir(root);
     if (members.length) throw new Error("Incomplete TLS identity; inspect the local TLS directory.");
-    const config = path.join(root, "openssl.cnf");
-    await fs.writeFile(config, `[req]\nprompt=no\ndistinguished_name=dn\nx509_extensions=ext\n[dn]\nCN=GrokDeck private bridge\n[ext]\nsubjectAltName=IP:${host}\nbasicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature,keyEncipherment\nextendedKeyUsage=serverAuth\n`, { flag: "wx", mode: 0o600 });
-    try {
-      await run("openssl", ["req", "-x509", "-newkey", "rsa:2048", "-sha256", "-nodes", "-days", "30", "-config", config, "-keyout", keyFile, "-out", certFile], { timeout: 30000, maxBuffer: 32768 });
-    } catch {
-      throw new Error("Could not generate the local TLS identity with OpenSSL.");
-    } finally { await fs.unlink(config); }
+    const pems=await selfsigned.generate([{name:'commonName',value:'GrokDeck private bridge'}],{
+      keyType:'rsa',keySize:2048,algorithm:'sha256',
+      notBeforeDate:new Date(Date.now()-60000),notAfterDate:new Date(Date.now()+30*86400000),
+      extensions:[
+        {name:'basicConstraints',cA:false,critical:true},
+        {name:'keyUsage',digitalSignature:true,keyEncipherment:true,critical:true},
+        {name:'extKeyUsage',serverAuth:true},
+        {name:'subjectAltName',altNames:[{type:7,ip:host}]}
+      ]
+    });
+    await fs.writeFile(keyFile,pems.private,{flag:'wx',mode:0o600});
+    await fs.writeFile(certFile,pems.cert,{flag:'wx',mode:0o600});
   }
   await regularFile(keyFile); await regularFile(certFile);
   if (process.platform !== "win32") { await fs.chmod(keyFile, 0o600); await fs.chmod(certFile, 0o600); }
@@ -63,7 +68,7 @@ export async function loadLANIdentity(host, directory = path.join(os.homedir(), 
   const fingerprint = createHash("sha256").update(parsed.raw).digest("hex");
   return { key, cert, fingerprint, keyFile, certFile };
 }
-export function createLANProxy({ host, token, key, cert, upstreamPort = DEFAULT_PORT, onResponse }) {
+export function createLANProxy({ host, token, key, cert, upstreamPort = DEFAULT_PORT, onResponse, enrollment }) {
   if (!privateIPv4(host) || !/^[A-Za-z0-9_-]{43}$/.test(token) || !Number.isInteger(upstreamPort) || upstreamPort < 1 || upstreamPort > 65535)
     throw new Error("Invalid private bridge configuration.");
   const server = https.createServer({ key, cert, minVersion: "TLSv1.2" }, (req, res) => {
@@ -74,6 +79,18 @@ export function createLANProxy({ host, token, key, cert, upstreamPort = DEFAULT_
     };
     if (req.headers.host !== `${host}:${server.address().port}` || req.headers.origin)
       return reject(403, "Only native clients using the configured private address are accepted.");
+    if(req.url==='/v1/pair'&&req.method==='POST'&&enrollment) {
+      const declared=Number(req.headers['content-length']||0);
+      if(!Number.isSafeInteger(declared)||declared<0||declared>1024)return reject(413,'Invalid pairing request.');
+      let received=0;
+      req.on('data',chunk=>{received+=chunk.length;if(received>1024)req.destroy();});
+      req.on('end',()=>{
+        if(!enrollment.redeem(req.headers.authorization))return reject(401,'Setup expired or already used. Create a new setup on your computer.');
+        res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store',Connection:'close'});
+        res.end(JSON.stringify({apiVersion:1,token}));
+      });
+      return;
+    }
     if (!authorized(req.headers.authorization, token)) return reject(401, "Pairing required.");
     if (!req.url.startsWith("/v1/") || req.url.includes("?") || !["GET", "POST"].includes(req.method))
       return reject(400, "Invalid bridge request.");
@@ -97,12 +114,12 @@ export function createLANProxy({ host, token, key, cert, upstreamPort = DEFAULT_
   server.requestTimeout = 20000; server.headersTimeout = 10000;
   return server;
 }
-export async function startLANBridge({ host, port = LAN_PORT, upstreamPort = DEFAULT_PORT, credentialDirectory, onResponse } = {}) {
+export async function startLANBridge({ host, port = LAN_PORT, upstreamPort = DEFAULT_PORT, credentialDirectory, onResponse, enrollment } = {}) {
   validateLANHost(host);
   if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error("Invalid LAN port.");
   const identity = await loadLANIdentity(host, credentialDirectory);
   const { token, file } = await loadPairingToken(credentialDirectory);
-  const server = createLANProxy({ host, token, ...identity, upstreamPort, onResponse });
+  const server = createLANProxy({ host, token, ...identity, upstreamPort, onResponse, enrollment });
   await new Promise((resolve, reject) => { server.once("error", reject); server.listen(port, host, resolve); });
   return { server, endpoint: `https://${host}:${server.address().port}`, fingerprint: identity.fingerprint, tokenFile: file };
 }

@@ -4,6 +4,17 @@ import UIKit
 @testable import GrokDeck
 
 final class GrokDeckTests: XCTestCase {
+  func testQuickPairingRequiresPrivateHTTPSPinnedEndpoint() throws {
+    let valid: [String: Any] = ["grokdeck": 1, "endpoint": "https://10.0.0.3:43874", "pin": String(repeating: "a", count: 64), "code": String(repeating: "B", count: 43)]
+    func text(_ data: [String: Any]) throws -> String { String(decoding: try JSONSerialization.data(withJSONObject: data), as: UTF8.self) }
+    XCTAssertNoThrow(try PhoneSetup.parse(text(valid)))
+    for endpoint in ["https://example.com:43874", "http://10.0.0.3:43874", "https://8.8.8.8:43874", "https://10.0.0.3:43874?secret=x", "https://10.0.0.3"] {
+      var bad = valid; bad["endpoint"] = endpoint
+      XCTAssertThrowsError(try PhoneSetup.parse(text(bad)))
+    }
+    for field in ["pin", "code"] { var bad = valid; bad[field] = ""; XCTAssertThrowsError(try PhoneSetup.parse(text(bad))) }
+  }
+
   func testPrivatePairingEndpointPolicy() throws {
     XCTAssertEqual(try BridgeAddress.validate("http://127.0.0.1:43872").host, "127.0.0.1")
     XCTAssertNoThrow(try BridgeAddress.validate("https://mini.example.ts.net"))

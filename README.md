@@ -19,7 +19,7 @@ A standalone desktop workspace for exploring your Grok Bot agents and discussion
 
 Install the latest Mac or Windows artifact from this repository's Actions build. Open Grok Bot and sign in, then launch GrokDeck and choose **Connect live**. The desktop installer includes the bridge; no Node.js checkout or terminal command is needed. Allow OS secure-storage access if prompted. Keep GrokDeck open while using a bridge it started. Independently started development bridges are reused and are not stopped when GrokDeck quits.
 
-The repository remains private. Public release, signed automatic installation and broadly available iPhone distribution are still being prepared. The current iPhone build connects through a paired Mac-hosted private HTTPS bridge; it cannot read another iOS app's private data.
+The repository remains private. Public release, signed automatic installation and broadly available iPhone distribution are still being prepared. To pair an iPhone, open desktop Settings → Connect your iPhone, select your private network address, start the connection, and copy phone setup. Paste it into iPhone Settings → Quick pairing within five minutes. Hosting resumes on app launch until you stop it in Settings. The current iPhone build connects through a paired desktop-hosted private HTTPS bridge; it cannot read another iOS app's private data.
 
 ## Run locally
 

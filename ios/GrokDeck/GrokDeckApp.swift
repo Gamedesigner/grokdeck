@@ -213,9 +213,23 @@ struct ConnectionView: View {
   @State private var address = ""
   @State private var token = ""
   @State private var fingerprint = ""
+  @State private var phoneSetup = ""
   var body: some View {
     NavigationStack {
       Form {
+        Section {
+          PasteButton(payloadType: String.self) { values in
+            if let value = values.first { phoneSetup = value }
+          }.accessibilityIdentifier("paste-phone-setup")
+          SecureField("Paste phone setup", text: $phoneSetup)
+            .textInputAutocapitalization(.never).autocorrectionDisabled().privacySensitive()
+            .accessibilityIdentifier("phone-setup")
+          Button(store.loading ? "Connecting…" : "Use phone setup") {
+            Task { if await store.connectSetup(phoneSetup) { phoneSetup = ""; dismiss() } }
+          }.disabled(store.loading || phoneSetup.isEmpty)
+        } header: { Text("Quick pairing") } footer: {
+          Text("On your computer, open GrokDeck Settings, start the phone connection, and copy phone setup. Paste it here within five minutes. Use the same trusted network on both devices.")
+        }
         Section {
           TextField("Bridge address", text: $address).textInputAutocapitalization(.never)
             .autocorrectionDisabled().keyboardType(.URL).accessibilityIdentifier("bridge-address")
@@ -236,7 +250,7 @@ struct ConnectionView: View {
             }
           }.disabled(store.loading || token.isEmpty)
         } header: {
-          Text("Your Mac bridge")
+          Text("Manual connection")
         } footer: {
           Text(
               "For private Wi-Fi, enter the HTTPS address and certificate SHA-256 shown by your Mac’s LAN bridge. Leave the fingerprint empty only for a normally trusted HTTPS server or simulator loopback. Pairing keys stay in this device’s Keychain."
@@ -280,6 +294,7 @@ struct ConnectionView: View {
           ToolbarItem(placement: .confirmationAction) {
             Button("Done") {
               token = ""
+              phoneSetup = ""
               dismiss()
             }.accessibilityIdentifier("close-settings")
           }

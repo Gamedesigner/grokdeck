@@ -17,11 +17,11 @@ let window,
 let releaseChecker, releaseStatus, releasePending;
 const liveClient = require('./live.cjs').createLiveClient();
 const bridgeProcess=require('./bridge-process.cjs').createBridgeProcess({app,client:liveClient});
-app.on('before-quit',()=>bridgeProcess.stop());
+app.on('before-quit',()=>{bridgeProcess.stop();void phoneHost?.stop();});
 let liveEnabled = false;
 const unsettledSends = new Set();
 const {createAppUpdates,installationSupport,RELEASES_URL}=require('./app-updates.cjs');
-let appUpdates;
+let appUpdates,phoneHost;
 const liveMessages = new Map();
 async function getLiveSnapshot() {
   const response = await liveClient.roster();
@@ -137,6 +137,7 @@ async function boot() {
     prefs = {
       ...defaults,
       ...validPrefs(existing),
+      ...(typeof existing.phoneHost === 'string' ? {phoneHost:existing.phoneHost} : {}),
       ...(typeof existing.sourcePath === "string"
         ? { sourcePath: existing.sourcePath }
         : {}),
@@ -147,6 +148,25 @@ async function boot() {
   releaseChecker = await import(
     pathToFileURL(path.join(__dirname, "releases.mjs")).href
   );
+  const {createPhoneHost}=await import('./phone-host.mjs');
+  phoneHost=createPhoneHost({ensureLive:()=>bridgeProcess.ensure()});
+  register('deck:phone-hosts',()=>({hosts:phoneHost.hosts(),...phoneHost.status()}));
+  register('deck:phone-start',async host=>{
+    if(typeof host!=='string')throw new Error('Invalid address');
+    const status=await phoneHost.enable(host);
+    prefs.phoneHost=host;await savePrefs();return status;
+  });
+  register('deck:phone-stop',async()=>{
+    const status=await phoneHost.stop();delete prefs.phoneHost;await savePrefs();return status;
+  });
+  register('deck:phone-copy-setup',async()=>{
+    const choice=await dialog.showMessageBox(window,{type:'info',title:'Pair your iPhone',
+      message:'Copy a one-time phone setup?',detail:'Paste it into GrokDeck Settings on your iPhone while both devices are on your trusted network. It expires after five minutes and can only be used once.',
+      buttons:['Copy setup','Cancel'],defaultId:0,cancelId:1});
+    if(choice.response!==0)return {copied:false};
+    const setup=phoneHost.setup();clipboard.writeText(setup.text);
+    return {copied:true,expiresAt:setup.expiresAt};
+  });
   const {autoUpdater}=require('electron-updater');
   appUpdates=createAppUpdates({currentVersion:app.getVersion(),updater:autoUpdater,
     supported:()=>installationSupport(app,autoUpdater),hasPendingSends:()=>unsettledSends.size>0});
@@ -333,6 +353,9 @@ async function boot() {
   if (devURL === "http://127.0.0.1:5173" && !app.isPackaged)
     await window.loadURL(devURL);
   else await window.loadFile(path.join(__dirname, "../dist/index.html"));
+  if(prefs.phoneHost)void phoneHost.enable(prefs.phoneHost).catch(()=>{
+    console.error('Saved phone connection could not start; select an available private network in Settings.');
+  });
   if (process.env.GROKDECK_SCREENSHOT) {
     setTimeout(async () => {
       try {

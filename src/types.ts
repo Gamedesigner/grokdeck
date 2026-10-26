@@ -72,7 +72,12 @@ export interface ComputersResponse {
   complete:boolean;
   computers:{agentId:string;name:string;state:"absent"|"hibernated"|"running"|"unknown";windows:{index:number;label:string}[];checkedAt:number;error?:string}[];
 }
+export interface PhoneHostStatus {active:boolean;endpoint:string|null;host:string|null;hosts?:{name:string;address:string}[]}
 export interface Bridge {
+  phoneHosts?():Promise<PhoneHostStatus>;
+  startPhone?(host:string):Promise<PhoneHostStatus>;
+  stopPhone?():Promise<PhoneHostStatus>;
+  copyPhoneSetup?():Promise<{copied:boolean;expiresAt?:number}>;
   openDesigner?():Promise<void>;
   checkAppUpdates?(force?:boolean):Promise<AppUpdateStatus>;
   appUpdateStatus?():Promise<AppUpdateStatus>;
