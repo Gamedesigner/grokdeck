@@ -8,7 +8,7 @@ Signed installed desktop builds can download through electron-updater and explic
 
 ## Current distribution limitation
 
-The current previews are unsigned and the private repository has no published stable updater release. These builds show manual downloads instead of offering installation. CI now retains `latest*.yml` alongside installers, ZIPs and blockmaps. Signing/notarization and publishing a stable release with its matching metadata are still required before end-to-end automatic installation can be verified. Never ship a GitHub token in app-update.yml or source. A Windows signed build must include its signing publisher in the generated updater configuration. No release is published automatically by CI.
+Mac 0.2.1 and 0.2.2 builds for Apple Silicon and Intel have passed Developer ID signing, notarization, Gatekeeper assessment, stapled-ticket validation, and packaged-app smoke tests. Their ZIP/DMG hashes match the updater metadata. The private repository still has no published stable updater release, and an actual update installation remains unverified. Windows previews remain unsigned and show manual downloads. CI retains `latest*.yml` alongside installers, ZIPs and blockmaps. Never ship a GitHub token in app-update.yml or source. A Windows signed build must include its signing publisher in the generated updater configuration. No release is published automatically by CI.
 
 ### Signed Mac packaging
 
