@@ -88,8 +88,10 @@ npm run bridge:live
 GROKDECK_LAN_HOST=YOUR_MAC_PRIVATE_IPV4 npm run bridge:lan
 ```
 
-Stop the default `npm run bridge` first because both use port 43872. The Mac helper may request Keychain access. It binds its initial account and team; restart it explicitly after switching either in Grok Bot. Do not put tokens into command arguments, source, chat, or Notion. See [connection evidence and limits](docs/live-connection.md) and [iPhone pairing](docs/ios-prototype.md). The live bridge is a developer command, not an automatically enabled service in the desktop installer.
+Stop the default `npm run bridge` first because both use pinned HTTPS port 43875. The Mac helper may request Keychain access. It binds its initial account and team; restart it explicitly after switching either in Grok Bot. Do not put tokens into command arguments, source, chat, or Notion. See [connection evidence and limits](docs/live-connection.md) and [iPhone pairing](docs/ios-prototype.md). The live bridge is a developer command, not an automatically enabled service in the desktop installer.
 
 ## App updates
 
 GrokDeck 0.2.2 detects its own GitHub releases as well as Grok Bot releases. Open Settings → GrokDeck updates. Signed Mac builds can download and restart to install; unsigned Windows previews use manual downloads. Private updates use your existing GitHub CLI sign-in or a host-only token. Once the repository is public, public release checks can work without credentials. [Update setup and limits](docs/app-updates.md) · [Grok Bot 0.75.8 review](docs/compatibility-0.75.8.md).
+
+Security upgrade 0.2.3 uses an authenticated local TLS connection and a new pairing credential. See [security upgrade and re-pairing](docs/security-upgrade-0.2.3.md).

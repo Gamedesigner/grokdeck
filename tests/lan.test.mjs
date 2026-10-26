@@ -7,6 +7,7 @@ import os from "node:os";
 import path from "node:path";
 import { X509Certificate, createHash } from "node:crypto";
 
+import { loadLocalIdentity } from "../bridge/local-tls.mjs";
 import { createBridge } from "../bridge/server.mjs";
 import { privateIPv4, validateLANHost, loadLANIdentity, createLANProxy } from "../bridge/lan.mjs";
 
@@ -30,10 +31,11 @@ test("private HTTPS validates its local certificate, rejects unpaired/browser cl
   assert.equal(identity.fingerprint, createHash("sha256").update(parsed.raw).digest("hex"));
   assert.equal((await loadLANIdentity(host, directory)).fingerprint, identity.fingerprint);
   if (process.platform !== "win32") assert.equal((await fs.stat(identity.keyFile)).mode & 0o777, 0o600);
-  const upstream = createBridge({ token });
+  const localIdentity = await loadLocalIdentity(directory);
+  const upstream = createBridge({ token, tlsOptions: localIdentity });
   await new Promise((r) => upstream.listen(0, "127.0.0.1", r));
   t.after(() => new Promise((r) => upstream.close(r)));
-  const proxy = createLANProxy({ host, token, ...identity, upstreamPort: upstream.address().port });
+  const proxy = createLANProxy({ host, token, ...identity, upstreamCert: localIdentity.cert, upstreamPort: upstream.address().port });
   // Test transport stays on loopback; startLANBridge separately enforces assigned RFC1918 binding.
   await new Promise((r) => proxy.listen(0, "127.0.0.1", r));
   t.after(() => new Promise((r) => proxy.close(r)));

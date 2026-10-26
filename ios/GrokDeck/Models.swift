@@ -169,8 +169,7 @@ enum BridgeAddress {
       components.fragment == nil,
       components.path.isEmpty || components.path == "/", let url = components.url
     else { throw BridgeError.invalidEndpoint }
-    let loopback = ["localhost", "127.0.0.1", "::1", "[::1]"].contains(host)
-    guard scheme == "https" || (scheme == "http" && loopback) else {
+    guard scheme == "https" else {
       throw BridgeError.invalidEndpoint
     }
     return url
@@ -227,13 +226,22 @@ struct BridgeClient: Sendable {
     let configuration = URLSessionConfiguration.ephemeral
     configuration.httpCookieStorage = nil
     configuration.urlCache = nil
-    let session = URLSession(
-      configuration: configuration,
-      delegate: NoRedirect(host: baseURL.host ?? "", certificatePin: certificatePin), delegateQueue: nil)
+    let delegate = NoRedirect(host: baseURL.host ?? "", certificatePin: certificatePin)
+    let session = URLSession(configuration: configuration, delegate: delegate, delegateQueue: nil)
     defer { session.invalidateAndCancel() }
-    let data: Data
-    let response: URLResponse
-    do { (data, response) = try await session.data(for: request) } catch {
+    var data = Data()
+    do {
+      let (bytes, response) = try await session.bytes(for: request, delegate: delegate)
+      guard let http = response as? HTTPURLResponse else { throw BridgeError.invalidResponse }
+      if http.statusCode == 401 { throw BridgeError.unauthorized }
+      guard (200...299).contains(http.statusCode) else { throw BridgeError.http(http.statusCode) }
+      let limit = 8 * 1024 * 1024
+      guard response.expectedContentLength <= Int64(limit) else { throw BridgeError.invalidResponse }
+      for try await byte in bytes {
+        guard data.count < limit else { throw BridgeError.invalidResponse }
+        data.append(byte)
+      }
+    } catch let error as BridgeError { throw error } catch {
       let code = (error as NSError).code
       if certificatePin != nil && [NSURLErrorCancelled, NSURLErrorSecureConnectionFailed,
         NSURLErrorServerCertificateHasBadDate, NSURLErrorServerCertificateUntrusted,
@@ -242,10 +250,6 @@ struct BridgeClient: Sendable {
       }
       throw BridgeError.unavailable
     }
-    guard let http = response as? HTTPURLResponse else { throw BridgeError.invalidResponse }
-    if http.statusCode == 401 { throw BridgeError.unauthorized }
-    guard (200...299).contains(http.statusCode) else { throw BridgeError.http(http.statusCode) }
-    guard data.count <= 8 * 1024 * 1024 else { throw BridgeError.invalidResponse }
     do { return try JSONDecoder().decode(type, from: data) } catch {
       throw BridgeError.invalidResponse
     }
@@ -278,6 +282,10 @@ final class NoRedirect: NSObject, URLSessionTaskDelegate, Sendable {
     else { completionHandler(.cancelAuthenticationChallenge, nil); return }
     completionHandler(.useCredential, URLCredential(trust: trust))
   }
+  func urlSession(
+    _ session: URLSession, task: URLSessionTask, didReceive challenge: URLAuthenticationChallenge,
+    completionHandler: @escaping @Sendable (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
+  ) { urlSession(session, didReceive: challenge, completionHandler: completionHandler) }
   func urlSession(
     _ session: URLSession, task: URLSessionTask,
     willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest,

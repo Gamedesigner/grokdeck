@@ -18,7 +18,7 @@ app.whenReady().then(async()=>{
  gateway.sourceVersion=()=>sourceVersion();
  await resolveConnection();
  await gateway.roster();
- const {server,port}=await startBridge({gateway,port:Number(process.env.GROKDECK_BRIDGE_PORT||43872)});
+ const {server,port}=await startBridge({gateway,port:Number(process.env.GROKDECK_BRIDGE_PORT||43875)});
  console.log(`Experimental live GrokDeck bridge ready on loopback port ${port}. Host credentials remain in memory.`);
  for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>server.close(()=>app.quit()));
  app.on('before-quit',()=>server.close());

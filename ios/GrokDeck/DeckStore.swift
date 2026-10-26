@@ -7,7 +7,7 @@ import SwiftUI
   @Published var error: String?
   @Published var loading = false
   @Published var endpoint =
-    UserDefaults.standard.string(forKey: "bridgeEndpoint") ?? "http://127.0.0.1:43872"
+    UserDefaults.standard.string(forKey: "bridgeEndpoint") ?? "https://127.0.0.1:43875"
   @Published var isPaired = false
   @Published var exampleMode = false
   @Published var certificateFingerprint = UserDefaults.standard.string(forKey: "bridgeCertificatePin") ?? ""
