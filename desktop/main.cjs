@@ -17,6 +17,9 @@ let window,
 let releaseChecker, releaseStatus, releasePending;
 const liveClient = require('./live.cjs').createLiveClient();
 let liveEnabled = false;
+const unsettledSends = new Set();
+const {createAppUpdates,installationSupport,RELEASES_URL}=require('./app-updates.cjs');
+let appUpdates;
 const liveMessages = new Map();
 async function getLiveSnapshot() {
   const response = await liveClient.roster();
@@ -142,6 +145,17 @@ async function boot() {
   releaseChecker = await import(
     pathToFileURL(path.join(__dirname, "releases.mjs")).href
   );
+  const {autoUpdater}=require('electron-updater');
+  appUpdates=createAppUpdates({currentVersion:app.getVersion(),updater:autoUpdater,
+    supported:()=>installationSupport(app,autoUpdater),hasPendingSends:()=>unsettledSends.size>0});
+  register('deck:app-updates', (force=false)=>{
+    if(typeof force!=='boolean')throw new Error('Invalid request');
+    return appUpdates.check(force);
+  });
+  register('deck:app-update-status',()=>appUpdates.status());
+  register('deck:download-update',()=>appUpdates.download());
+  register('deck:install-update',()=>appUpdates.install());
+  register('deck:open-downloads',()=>shell.openExternal(RELEASES_URL));
   register("deck:check-releases", async (force = false) => {
     if (typeof force !== "boolean") throw new Error("Invalid request");
     const source = await getSnapshot();
@@ -177,8 +191,17 @@ async function boot() {
   register("deck:avatar", async id => {requireLive();return liveClient.avatar(id);});
   register("deck:computers", async () => {requireLive();return liveClient.computers();});
   register("deck:live-messages", async id => {requireLive();const result=await liveClient.messages(id);liveMessages.set(id,result.messages);return result;});
-  register("deck:send", async (id,prompt,nonce,replyToId) => {requireLive();return liveClient.send(id,prompt,nonce,replyToId);});
-  register("deck:acceptance", async (id,nonce) => {requireLive();return liveClient.acceptance(id,nonce);});
+  register("deck:send", async (id,prompt,nonce,replyToId) => {
+    requireLive();const key=JSON.stringify([id,nonce]);unsettledSends.add(key);
+    const result=await liveClient.send(id,prompt,nonce,replyToId);
+    if(['accepted','rejected'].includes(result.status))unsettledSends.delete(key);
+    return result;
+  });
+  register("deck:acceptance", async (id,nonce) => {
+    requireLive();const result=await liveClient.acceptance(id,nonce);
+    if(['accepted','rejected'].includes(result.status))unsettledSends.delete(JSON.stringify([id,nonce]));
+    return result;
+  });
   register("deck:interrupt", async id => {requireLive();return liveClient.interrupt(id);});
   register("deck:preferences", () => prefs);
   register("deck:save-preferences", async (patch) => {

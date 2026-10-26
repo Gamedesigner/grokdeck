@@ -1,5 +1,10 @@
 const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("grokdeck", {
+  checkAppUpdates: (force=false)=>ipcRenderer.invoke('deck:app-updates',force),
+  appUpdateStatus: ()=>ipcRenderer.invoke('deck:app-update-status'),
+  downloadUpdate: ()=>ipcRenderer.invoke('deck:download-update'),
+  installUpdate: ()=>ipcRenderer.invoke('deck:install-update'),
+  openDownloads: ()=>ipcRenderer.invoke('deck:open-downloads'),
   getAvatar: id => ipcRenderer.invoke("deck:avatar",id),
   computers: () => ipcRenderer.invoke("deck:computers"),
   connectLive: () => ipcRenderer.invoke("deck:connect-live"),

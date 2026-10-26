@@ -1,6 +1,6 @@
 {
   "name": "grokdeck",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "A personal command deck for your Grok Bot conversations",
   "author": "Gamedesigner",
@@ -21,6 +21,7 @@
     "bridge:lan": "node bridge/lan.mjs"
   },
   "dependencies": {
+    "electron-updater": "6.8.11",
     "lucide-react": "^0.577.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -68,7 +69,15 @@
       "perMachine": false,
       "deleteAppDataOnUninstall": false
     },
-    "artifactName": "GrokDeck-${version}-${os}-${arch}.${ext}"
+    "artifactName": "GrokDeck-${version}-${os}-${arch}.${ext}",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Gamedesigner",
+        "repo": "grokdeck",
+        "private": true
+      }
+    ]
   },
   "type": "module"
 }

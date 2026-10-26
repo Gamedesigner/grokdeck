@@ -1,3 +1,4 @@
+import { compatibilityWarning } from '../desktop/compatibility.mjs';
 import { normalizeEntries } from '../desktop/cache.mjs';
 import { loadComputers } from './computers.mjs';
 import { loadAvatar } from './avatars.mjs';
@@ -22,7 +23,8 @@ export async function liveRoute({req,url,respond,gateway}) {
     return avatar?respond(200,avatar):respond(404,{error:'Avatar unavailable.'});
   }
   const roster=await gateway.roster();
-  const metadata={kind:'live-gateway',available:true,checkedAt:Date.now(),version:'0.75.0',cacheUpdatedAt:Date.now(),warning:null};
+  const version=await gateway.sourceVersion?.()||null;
+  const metadata={kind:'live-gateway',available:true,checkedAt:Date.now(),version,cacheUpdatedAt:Date.now(),warning:compatibilityWarning(version)};
   const row=match?roster.find(a=>a.id===match[1]):null;
   if(match&&!row)return respond(404,{error:'Agent not found in the signed-in account.'});
   if(!match)return respond(200,{apiVersion:1,agents:roster.filter(a=>!a.isRemovedFromSidebar).map(a=>({

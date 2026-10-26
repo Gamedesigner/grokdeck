@@ -2,6 +2,7 @@ import { promises as fs } from 'node:fs';
 import { constants } from 'node:fs';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
+import {supportsLiveVersion} from '../desktop/compatibility.mjs';
 import { defaultSource } from '../desktop/cache.mjs';
 export class SessionError extends Error {
   constructor(code) { super(code); this.name='SessionError'; this.code=code; }
@@ -32,7 +33,7 @@ export async function readSession({ decrypt, sourcePath=defaultSource(), now=Dat
   try {
     ({status,disk,accounts}=await readContainers(sourcePath));
   } catch { throw new SessionError('session-unavailable'); }
-  if (status.signedIn!==true || status.appVersion!=='0.75.0') throw new SessionError('unsupported-or-signed-out');
+  if (status.signedIn!==true || !supportsLiveVersion(status.appVersion)) throw new SessionError('unsupported-or-signed-out');
   const scope=accounts.active, values=accounts.accounts?.[scope];
   if (typeof scope!=='string'||!/^[0-9a-f]{64}$/.test(scope)||!record(values)||typeof values['cursor-access-token']!=='string') throw new SessionError('session-unavailable');
   let token, claims, machineId;
@@ -50,11 +51,16 @@ export async function readSession({ decrypt, sourcePath=defaultSource(), now=Dat
     try { teamId=await decrypt(Buffer.from(values['cursor-selected-team-id'],'base64')); } catch { throw new SessionError('keychain-unavailable'); }
     if (typeof teamId!=='string'||!/^\d{1,32}$/.test(teamId)) throw new SessionError('invalid-team');
   }
-  return {token,accountScope:scope,machineId,teamId};
+  return {token,accountScope:scope,machineId,teamId,appVersion:status.appVersion};
 }
 export async function currentAccountScope(sourcePath=defaultSource()) {
   try {
     const {status,accounts}=await readContainers(sourcePath);
-    return status.signedIn===true&&status.appVersion==='0.75.0'&&typeof accounts.active==='string'&&/^[0-9a-f]{64}$/.test(accounts.active) ? accounts.active : null;
+    return status.signedIn===true&&supportsLiveVersion(status.appVersion)&&typeof accounts.active==='string'&&/^[0-9a-f]{64}$/.test(accounts.active) ? accounts.active : null;
   } catch { return null; }
+}
+
+export async function sourceVersion(sourcePath=defaultSource()) {
+  const status=await readJSONFile(path.join(sourcePath,'desktop-status.json'),16384);
+  return typeof status.appVersion==='string'?status.appVersion:null;
 }

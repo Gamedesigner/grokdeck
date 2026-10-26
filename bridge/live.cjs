@@ -5,7 +5,7 @@ app.setName('Grok Bot');
 app.setPath('userData',path.join(os.homedir(),'.grokdeck-bridge','live-helper'));
 app.whenReady().then(async()=>{
  app.dock?.hide();
- const {readSession,currentAccountScope}=await import('./session.mjs');
+ const {readSession,currentAccountScope,sourceVersion}=await import('./session.mjs');
  const {createConnectionResolver}=await import('./backend.mjs');
  const {createGateway}=await import('./gateway.mjs');
  const {startBridge}=await import('./server.mjs');
@@ -15,6 +15,7 @@ app.whenReady().then(async()=>{
  const guardedSession=async()=>{const value=await session();if(value.accountScope!==initialScope||value.teamId!==initialTeam)throw new Error('account-changed');return value;};
  const resolveConnection=createConnectionResolver({session:guardedSession,currentAccountScope:guardedScope});
  const gateway=createGateway({resolveConnection,getAccountScope:guardedScope});
+ gateway.sourceVersion=()=>sourceVersion();
  await resolveConnection();
  await gateway.roster();
  const {server,port}=await startBridge({gateway,port:Number(process.env.GROKDECK_BRIDGE_PORT||43872)});
