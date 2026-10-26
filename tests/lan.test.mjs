@@ -6,7 +6,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { X509Certificate, createHash } from "node:crypto";
-import { spawnSync } from "node:child_process";
+
 import { createBridge } from "../bridge/server.mjs";
 import { privateIPv4, validateLANHost, loadLANIdentity, createLANProxy } from "../bridge/lan.mjs";
 
@@ -19,8 +19,8 @@ test("LAN binding requires an exact assigned private address", () => {
   assert.throws(() => validateLANHost("0.0.0.0", interfaces));
 });
 
-const opensslAvailable = spawnSync("openssl", ["version"]).status === 0;
-test("private HTTPS validates its local certificate, rejects unpaired/browser clients and preserves loopback auth", { skip: !opensslAvailable }, async (t) => {
+
+test("private HTTPS validates its local certificate, rejects unpaired/browser clients and preserves loopback auth", async (t) => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), "grokdeck-lan-"));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const host = "10.1.2.3", token = "A".repeat(43);

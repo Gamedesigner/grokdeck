@@ -4,7 +4,7 @@ Keep Gamedesigner/grokdeck PRIVATE until Ron explicitly requests publication. Pr
 
 The goal is not complete merely because CI passes. Completion requires installed-app onboarding without developer commands, verified Mac and Windows live access, practical iPhone pairing/distribution, signed and tested self-updates, and an update-maintenance path that can use Codex on the Mac mini plus hosted Windows GitHub Actions while the Windows PC is off.
 
-Current progress: hosted Mac/Windows CI exists; explicit version gating and private self-update detection exist; the packaged desktop can now start its own bridge; Mac real-account reads work on 0.75.8. Still open: built-in LAN pairing, Windows credential/runtime verification, signed release publishing with end-to-end update installation, iOS distribution, and an observed vendor-update-to-Codex-to-tested-build maintenance cycle. Unknown versions must not silently authorize unreviewed commands.
+Current progress: hosted Mac/Windows CI exists; explicit version gating and private self-update detection exist; the packaged desktop can now start its own bridge; Mac real-account reads work on 0.75.8. Built-in LAN pairing is now implemented with single-use setup codes; packaged Mac startup/resume, Swift HTTPS exchange, and simulator native Paste-to-live-roster are verified; physical phone quick-pair verification is pending. Still open: Windows credential/runtime verification, signed release publishing with end-to-end update installation, iOS distribution, and an observed vendor-update-to-Codex-to-tested-build maintenance cycle. Unknown versions must not silently authorize unreviewed commands.
 
 # Next milestones
 

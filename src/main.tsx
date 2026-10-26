@@ -41,6 +41,7 @@ import type {
   Snapshot,
   ReleaseStatus,
   AppUpdateStatus,
+  PhoneHostStatus,
   ComputersResponse,
 } from "./types";
 import { demoSnapshot } from "./demo";
@@ -150,6 +151,11 @@ function App() {
       arch: "",
       supportedSourceVersion: "0.75.0",
     });
+  const [phone,setPhone]=useState<PhoneHostStatus|null>(null);
+  const [phoneAddress,setPhoneAddress]=useState('');
+  const [phoneBusy,setPhoneBusy]=useState(false);
+  const [phoneMessage,setPhoneMessage]=useState('');
+  useEffect(()=>{if(settings&&bridge?.phoneHosts)void bridge.phoneHosts().then(setPhone).catch(()=>setPhoneMessage('Phone connection unavailable.'));},[settings]);
   const [activityFilter, setActivityFilter] = useState(false);
   const [agentSearchOpen, setAgentSearchOpen] = useState(false);
   const [discussionSearchOpen, setDiscussionSearchOpen] = useState(false);
@@ -1386,6 +1392,27 @@ function App() {
                 </button>
               </div>
               <hr />
+              <h3>Connect your iPhone</h3>
+              <p>Use the same trusted network on both devices. Keep GrokDeck open while your phone is connected. Once enabled, this connection resumes when GrokDeck opens.</p>
+              {phone?.active ? <>
+                <p role="status">Phone connection ready: {phone.endpoint}</p>
+                <button className="button" onClick={async()=>{
+                  try{const result=await bridge!.copyPhoneSetup!();if(result.copied)setPhoneMessage('Setup copied. Paste it into GrokDeck Settings on your iPhone within five minutes.');}
+                  catch{setPhoneMessage('Could not copy setup. Try again.');}
+                }}>Copy phone setup</button>
+                <button className="button" disabled={phoneBusy} onClick={async()=>{
+                  setPhoneBusy(true);try{await bridge!.stopPhone!();setPhone(await bridge!.phoneHosts!());setPhoneMessage('Phone connection stopped.');}catch{setPhoneMessage('Could not stop phone connection.');}finally{setPhoneBusy(false);}
+                }}>Stop phone connection</button>
+              </> : <>
+                <label>Private network address <select aria-label="Phone network address" value={phoneAddress} onChange={e=>setPhoneAddress(e.target.value)}>
+                  <option value="">Choose your network</option>
+                  {phone?.hosts?.map(row=><option key={row.name+row.address} value={row.address}>{row.name} · {row.address}</option>)}
+                </select></label>
+                <button className="button" disabled={!phoneAddress||phoneBusy} onClick={async()=>{
+                  setPhoneBusy(true);setPhoneMessage('');try{setPhone(await bridge!.startPhone!(phoneAddress));}catch{setPhoneMessage('Could not start phone connection. Check Grok Bot sign-in and the selected network.');}finally{setPhoneBusy(false);}
+                }}>{phoneBusy?'Starting…':'Start phone connection'}</button>
+              </>}
+              {phoneMessage&&<p role="status">{phoneMessage}</p>}
               <h3>GrokDeck updates</h3>
               <p>Checks use your existing GitHub CLI sign-in or a host-only GrokDeck GitHub token. This private preview can open downloads; in-app installation requires a signed build and published update files.</p>
               <div className="release-settings">
