@@ -5,8 +5,9 @@
 The 0.2.2 build 2 release archive and App Store Connect distribution export
 succeeded locally. The archived app has the expected version/build, compiled
 opaque app icons, and all four iPad orientations. This verifies packaging only:
-the package has not been uploaded to App Store Connect, processed by TestFlight,
-or released. The current installed phone build is still the earlier developer
+an upload attempt stopped because App Store Connect has no record for bundle ID
+`com.gamedesigner.grokdeck.ios`. No build was uploaded, processed by TestFlight,
+or released. Create the app record before retrying. The current installed phone build is still the earlier developer
 build. Local release outputs are outside Documents, under
 `~/Library/Developer/Xcode/Archives/GrokDeck-0.2.2.xcarchive` and
 `~/Library/Caches/GrokDeck/ios-distribution-0.2.2`.
