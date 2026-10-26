@@ -17,9 +17,9 @@ A standalone desktop workspace for exploring your Grok Bot agents and discussion
 
 ## Use the private preview
 
-Install the latest Mac or Windows artifact from this repository's Actions build. Open Grok Bot and sign in, then launch GrokDeck and choose **Connect live**. The desktop installer includes the bridge; no Node.js checkout or terminal command is needed. Allow OS secure-storage access if prompted. Keep GrokDeck open while using a bridge it started. Independently started development bridges are reused and are not stopped when GrokDeck quits.
+Download the latest Mac or Windows installer from [private releases](https://github.com/Gamedesigner/grokdeck/releases/latest). On a Mac, choose the arm64 DMG for Apple Silicon or x64 DMG for Intel; open it and drag GrokDeck into Applications. Windows has an x64 installer and portable ZIP. Open Grok Bot and sign in, then launch GrokDeck and choose **Connect live**. The desktop installer includes the bridge; no Node.js checkout or terminal command is needed. Allow OS secure-storage access if prompted. Keep GrokDeck open while using a bridge it started. Independently started development bridges are reused and are not stopped when GrokDeck quits.
 
-The repository remains private. Public release, signed automatic installation and broadly available iPhone distribution are still being prepared. To pair an iPhone, open desktop Settings → Connect your iPhone, select your private network address, start the connection, and copy phone setup. Paste it into iPhone Settings → Quick pairing within five minutes. Hosting resumes on app launch until you stop it in Settings. The current iPhone build connects through a paired desktop-hosted private HTTPS bridge; it cannot read another iOS app's private data.
+The repository remains private. Mac signing, notarization and a real private self-update are verified. Windows signing and broadly available iPhone distribution are still being prepared. To pair an iPhone, open desktop Settings → Connect your iPhone, select your private network address, start the connection, and copy phone setup. Paste it into iPhone Settings → Quick pairing within five minutes. Hosting resumes on app launch until you stop it in Settings. The current iPhone build connects through a paired desktop-hosted private HTTPS bridge; it cannot read another iOS app's private data.
 
 ## Run locally
 
@@ -57,7 +57,7 @@ npm run package:mac  # macOS arm64 + x64 ZIP and DMG, on a Mac
 npm run package:win  # Windows x64 ZIP and NSIS installer, on Windows
 ```
 
-GitHub Actions builds both platforms and retains private downloadable artifacts. These early private builds are unsigned. Public distribution needs signing on Windows and signing/notarization on macOS. No release is published automatically.
+GitHub Actions builds both platforms and retains private downloadable artifacts. CI produces unsigned previews; private releases include locally signed/notarized Mac builds. Windows signing remains to be configured. No release is published automatically.
 
 ## Validate
 
@@ -92,4 +92,4 @@ Stop the default `npm run bridge` first because both use port 43872. The Mac hel
 
 ## App updates
 
-GrokDeck 0.2.0 detects its own private GitHub releases as well as Grok Bot releases. Open Settings → GrokDeck updates. Signed installed builds can download and restart to install; today's unsigned previews use manual downloads. [Update setup and limits](docs/app-updates.md) · [Grok Bot 0.75.8 review](docs/compatibility-0.75.8.md).
+GrokDeck 0.2.2 detects its own GitHub releases as well as Grok Bot releases. Open Settings → GrokDeck updates. Signed Mac builds can download and restart to install; unsigned Windows previews use manual downloads. Private updates use your existing GitHub CLI sign-in or a host-only token. Once the repository is public, public release checks can work without credentials. [Update setup and limits](docs/app-updates.md) · [Grok Bot 0.75.8 review](docs/compatibility-0.75.8.md).

@@ -4,7 +4,7 @@ Keep Gamedesigner/grokdeck PRIVATE until Ron explicitly requests publication. Pr
 
 The goal is not complete merely because CI passes. Completion requires installed-app onboarding without developer commands, verified Mac and Windows live access, practical iPhone pairing/distribution, signed and tested self-updates, and an update-maintenance path that can use Codex on the Mac mini plus hosted Windows GitHub Actions while the Windows PC is off.
 
-Current progress: hosted Mac/Windows CI exists; explicit version gating and private self-update detection exist; the packaged desktop can now start its own bridge; Mac real-account reads work on 0.75.8. Built-in LAN pairing is now implemented with single-use setup codes; packaged Mac startup/resume, Swift HTTPS exchange, and simulator native Paste-to-live-roster are verified; physical phone quick-pair verification is pending. Still open: Windows credential/runtime verification, signed release publishing with end-to-end update installation, iOS distribution, and an observed vendor-update-to-Codex-to-tested-build maintenance cycle. Unknown versions must not silently authorize unreviewed commands.
+Current progress: hosted Mac/Windows CI exists; explicit version gating and private self-update detection exist; the packaged desktop can now start its own bridge; Mac real-account reads work on 0.75.8. Built-in LAN pairing is now implemented with single-use setup codes; packaged Mac startup/resume, Swift HTTPS exchange, and simulator native Paste-to-live-roster are verified; physical phone quick-pair verification is pending. Private0.2.2 releases now contain signed/notarized Mac installers and Windows previews. Real signed Mac0.2.1→0.2.2 installation, relaunch and draft preservation passed on Apple Silicon, including migration from an Intel binary under Rosetta. Six-hour Mac mini compatibility maintenance is active. The iOS0.2.2 archive and distribution export succeeded; upload needs an App Store Connect app record and web sign-in. Still open: signed-helper Keychain consent, Windows credential/runtime and signing verification, iOS distribution, MacBook Pro/Intel hardware checks, and an observed vendor-update-to-Codex-to-tested-build maintenance cycle. Unknown versions must not silently authorize unreviewed commands.
 
 # Next milestones
 
@@ -26,8 +26,8 @@ Current progress: hosted Mac/Windows CI exists; explicit version gating and priv
 ## Maintainability and distribution
 
 - Test the adapter against new Grok Bot releases advertised by the official feed; availability notifications do not imply verified compatibility.
-- Add signed GrokDeck update manifests, rollback, and private distribution.
-- Sign Windows builds and sign/notarize Mac builds before wider distribution.
+- Signed Mac manifests and private distribution are verified; retain prior releases for manual rollback. Automatic downgrades remain disabled.
+- Configure Windows signing before wider distribution; Mac signing/notarization is verified.
 - Add an explicit migration/backup policy for local notes and customization.
 
 ## Product exploration
