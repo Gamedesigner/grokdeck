@@ -178,7 +178,7 @@ function App() {
     if(!bridge?.connectLive)return;
     setLiveConnecting(true);
     try {setData(await bridge.connectLive());avatarRequests.clear();computersRequest.current++;setComputers(null);setComputersError('');setComputersLoading(false);setDemo(false);setError('');}
-    catch {setError('Could not connect live. Start the live GrokDeck bridge on this computer and check Grok Bot sign-in.');}
+    catch {setError('Could not connect live. Open Grok Bot, check that you’re signed in, and allow secure-storage access if prompted.');}
     finally {setLiveConnecting(false);}
   };
 
@@ -636,6 +636,10 @@ function App() {
             Settings & appearance
             <ChevronRight size={15} />
           </button>
+          <a className="designer-credit" href="https://ronmillar.com" target="_blank" rel="noopener noreferrer"
+            onClick={event=>{if(bridge?.openDesigner){event.preventDefault();void bridge.openDesigner().catch(()=>setToast('Could not open ronmillar.com.'));}}}>
+            GrokDeck by Ron Millar 2026 <ArrowUpRight size={11} aria-hidden="true" />
+          </a>
         </div>
       </aside>
       <main>
@@ -1353,7 +1357,7 @@ function App() {
               <hr />
               <h3>Grok Bot connection</h3>
               <p>
-                Cached mode reads local history. Live mode uses your authenticated Mac bridge;
+                Cached mode reads local history. Live mode uses your authenticated local bridge;
                 sending requires the Send button. Grok Bot session credentials stay in the host bridge.
               </p>
               <div className="source-path">

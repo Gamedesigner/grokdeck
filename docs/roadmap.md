@@ -1,3 +1,11 @@
+# Distribution goal and current gates
+
+Keep Gamedesigner/grokdeck PRIVATE until Ron explicitly requests publication. Prepare an easy-to-install Mac, Windows and iPhone utility for that eventual release. Visible credit: “GrokDeck by Ron Millar 2026”, linking to https://ronmillar.com.
+
+The goal is not complete merely because CI passes. Completion requires installed-app onboarding without developer commands, verified Mac and Windows live access, practical iPhone pairing/distribution, signed and tested self-updates, and an update-maintenance path that can use Codex on the Mac mini plus hosted Windows GitHub Actions while the Windows PC is off.
+
+Current progress: hosted Mac/Windows CI exists; explicit version gating and private self-update detection exist; the packaged desktop can now start its own bridge; Mac real-account reads work on 0.75.8. Still open: built-in LAN pairing, Windows credential/runtime verification, signed release publishing with end-to-end update installation, iOS distribution, and an observed vendor-update-to-Codex-to-tested-build maintenance cycle. Unknown versions must not silently authorize unreviewed commands.
+
 # Next milestones
 
 ## First build verification

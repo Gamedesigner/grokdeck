@@ -250,6 +250,15 @@ struct ConnectionView: View {
             Text("Light").tag("light")
           }
         }
+        Section {
+          Link(destination: URL(string: "https://ronmillar.com")!) {
+            HStack {
+              Text("GrokDeck by Ron Millar 2026")
+              Spacer()
+              Image(systemName: "arrow.up.right").font(.caption2)
+            }.font(.footnote).foregroundStyle(.secondary)
+          }.accessibilityIdentifier("designer-credit")
+        }
         Section("Connection limits") {
           Text(
             "A live Mac bridge enables messaging and recent reply updates. A cache-only bridge supports browsing and draft sharing. Approvals still happen in Grok Bot."

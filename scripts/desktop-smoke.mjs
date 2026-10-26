@@ -157,6 +157,8 @@ try {
   await page.waitForTimeout(150);
   opened = await desktop.evaluate(() => globalThis.__grokdeckOpened);
   assert.equal(opened, "grokbot://app/v1/agent?id=smoke-agent");
+  await page.getByRole("link", { name: "GrokDeck by Ron Millar 2026" }).click();
+  assert.equal(await desktop.evaluate(() => globalThis.__grokdeckOpened), "https://ronmillar.com");
   await fs.mkdir("test-results", { recursive: true });
   await page.screenshot({
     path: `test-results/desktop-${process.platform}-${process.arch}.png`,
