@@ -20,4 +20,4 @@ try {
   const info=await page.evaluate(()=>window.grokdeck.info());
   assert.ok(info.version);await fs.mkdir('test-results',{recursive:true});await page.screenshot({path:`test-results/hardened-${process.platform}-${process.arch}.png`});
   console.log(JSON.stringify({status:'passed',info,fusesVerified:true,rendererIsolation:true,preferences:true}));
-} finally {if(app)await app.close();await fs.rm(root,{recursive:true,force:true});}
+} finally {if(app)await app.close();await fs.rm(root,{recursive:true,force:true,maxRetries:20,retryDelay:250});}
