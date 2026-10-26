@@ -44,6 +44,10 @@ export interface ReleaseStatus {
   checkedAt: number;
   message: string;
 }
+export interface AppUpdateStatus {
+  status: 'idle'|'checking'|'current'|'available'|'downloading'|'downloaded'|'installing'|'unavailable';
+  currentVersion:string; version:string|null; checkedAt:number; canInstall:boolean; message:string;
+}
 export interface Preferences {
   checkReleases: boolean;
   theme: "dark" | "light" | "system";
@@ -56,7 +60,39 @@ export interface Preferences {
   seen: Record<string, number>;
   drafts: Record<string, string>;
 }
+export interface SendReceipt {
+  apiVersion: number;
+  clientNonce: string;
+  accepted: boolean | null;
+  status: "accepted" | "rejected" | "unknown" | "pending";
+}
+export interface ComputersResponse {
+  apiVersion:number;
+  checkedAt:number;
+  complete:boolean;
+  computers:{agentId:string;name:string;state:"absent"|"hibernated"|"running"|"unknown";windows:{index:number;label:string}[];checkedAt:number;error?:string}[];
+}
+export interface PhoneHostStatus {active:boolean;endpoint:string|null;host:string|null;hosts?:{name:string;address:string}[]}
 export interface Bridge {
+  phoneHosts?():Promise<PhoneHostStatus>;
+  startPhone?(host:string):Promise<PhoneHostStatus>;
+  stopPhone?():Promise<PhoneHostStatus>;
+  copyPhoneSetup?():Promise<{copied:boolean;expiresAt?:number}>;
+  openDesigner?():Promise<void>;
+  checkAppUpdates?(force?:boolean):Promise<AppUpdateStatus>;
+  appUpdateStatus?():Promise<AppUpdateStatus>;
+  downloadUpdate?():Promise<AppUpdateStatus>;
+  installUpdate?():Promise<AppUpdateStatus>;
+  openDownloads?():Promise<void>;
+  getAvatar?(id:string): Promise<string>;
+  computers?(): Promise<ComputersResponse>;
+  connectLive?(): Promise<Snapshot>;
+  disconnectLive?(): Promise<Snapshot>;
+  liveMessages?(id: string): Promise<{messages:Message[]; source:Snapshot['source']}>;
+  send?(id:string,prompt:string,nonce:string,replyToId?:string): Promise<SendReceipt>;
+  acceptance?(id:string,nonce:string): Promise<SendReceipt>;
+  interrupt?(id:string): Promise<{hadActiveRun:boolean}>;
+
   checkReleases?(force?: boolean): Promise<ReleaseStatus>;
   snapshot(): Promise<Snapshot>;
   preferences(): Promise<Preferences>;

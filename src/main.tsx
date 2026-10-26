@@ -19,11 +19,14 @@ import {
   Layers3,
   LoaderCircle,
   MessageSquare,
+  Monitor,
   Moon,
   Pin,
   Plus,
   RefreshCw,
   Search,
+  Reply,
+  Smile,
   Settings2,
   Sparkles,
   Sun,
@@ -37,6 +40,9 @@ import type {
   Preferences,
   Snapshot,
   ReleaseStatus,
+  AppUpdateStatus,
+  PhoneHostStatus,
+  ComputersResponse,
 } from "./types";
 import { demoSnapshot } from "./demo";
 import "./styles.css";
@@ -97,13 +103,30 @@ function initials(name: string) {
     .join("")
     .toUpperCase();
 }
-function Avatar({ agent, small = false }: { agent: Agent; small?: boolean }) {
+const avatarRequests = new Map<string,Promise<string|null>>();
+function Avatar({ agent, small = false, live = false }: { agent: Agent; small?: boolean; live?:boolean }) {
+  const [image,setImage]=useState<string|null>(null);
+  const element=useRef<HTMLSpanElement>(null);
+  useEffect(()=>{
+    setImage(null);
+    if(!live||!bridge?.getAvatar)return;
+    let active=true;
+    const load=()=>{
+      let pending=avatarRequests.get(agent.id);
+      if(!pending){pending=bridge.getAvatar!(agent.id).catch(()=>null);avatarRequests.set(agent.id,pending);}
+      pending.then(value=>{if(active)setImage(value);});
+    };
+    if(!element.current||typeof IntersectionObserver==='undefined'){load();return()=>{active=false;};}
+    const observer=new IntersectionObserver(entries=>{if(entries.some(entry=>entry.isIntersecting)){observer.disconnect();load();}},{rootMargin:'100px'});
+    observer.observe(element.current);return()=>{active=false;observer.disconnect();};
+  },[agent.id,live]);
   return (
     <span
+      ref={element}
       className={`avatar ${small ? "small" : ""}`}
       style={{ "--agent-color": agent.color } as React.CSSProperties}
     >
-      {initials(agent.name)}
+      {image ? <img src={image} alt={`${agent.name} avatar`} onError={()=>setImage(null)}/> : initials(agent.name)}
     </span>
   );
 }
@@ -128,7 +151,43 @@ function App() {
       arch: "",
       supportedSourceVersion: "0.75.0",
     });
+  const [phone,setPhone]=useState<PhoneHostStatus|null>(null);
+  const [phoneAddress,setPhoneAddress]=useState('');
+  const [phoneBusy,setPhoneBusy]=useState(false);
+  const [phoneMessage,setPhoneMessage]=useState('');
+  useEffect(()=>{if(settings&&bridge?.phoneHosts)void bridge.phoneHosts().then(setPhone).catch(()=>setPhoneMessage('Phone connection unavailable.'));},[settings]);
   const [activityFilter, setActivityFilter] = useState(false);
+  const [agentSearchOpen, setAgentSearchOpen] = useState(false);
+  const [discussionSearchOpen, setDiscussionSearchOpen] = useState(false);
+  const [emojiOpen, setEmojiOpen] = useState(false);
+  const [replyTargets, setReplyTargets] = useState<Record<string,{id:string;content:string}>>({});
+  const composer = useRef<HTMLTextAreaElement>(null);
+  const live = data.source.kind === 'live-gateway' && !demo;
+  const [liveConnecting, setLiveConnecting] = useState(false);
+  const [computers,setComputers]=useState<ComputersResponse|null>(null);
+  const [computersLoading,setComputersLoading]=useState(false);
+  const [computersError,setComputersError]=useState('');
+  const [activeComputersOnly,setActiveComputersOnly]=useState(true);
+  const computersRequest=useRef(0);
+  const refreshComputers=async()=>{
+    if(!live||!bridge?.computers)return;
+    const generation=++computersRequest.current;
+    setComputersLoading(true);setComputersError('');
+    try{const next=await bridge.computers();if(generation===computersRequest.current)setComputers(next);}
+    catch{if(generation===computersRequest.current)setComputersError('Computer status could not be read. Try refreshing.');}
+    finally{if(generation===computersRequest.current)setComputersLoading(false);}
+  };
+  useEffect(()=>{if(view==='computers'&&live&&computers===null&&!computersLoading&&!computersError)void refreshComputers();},[view,live,computers,computersLoading,computersError]);
+  const [pendingSends, setPendingSends] = useState<Record<string,{nonce:string;prompt:string;status:string;replyToId?:string}>>({});
+  const followLatest = useRef(true);
+  const connectLive = async () => {
+    if(!bridge?.connectLive)return;
+    setLiveConnecting(true);
+    try {setData(await bridge.connectLive());avatarRequests.clear();computersRequest.current++;setComputers(null);setComputersError('');setComputersLoading(false);setDemo(false);setError('');}
+    catch {setError('Could not connect live. Open Grok Bot, check that you’re signed in, and allow secure-storage access if prompted.');}
+    finally {setLiveConnecting(false);}
+  };
+
   const [releaseStatus, setReleaseStatus] = useState<ReleaseStatus | null>(
     null,
   );
@@ -157,6 +216,23 @@ function App() {
     const timer = setInterval(() => void checkReleases(), 6 * 3600000);
     return () => clearInterval(timer);
   }, [loading, demo, prefs.checkReleases]);
+
+  const [appUpdate,setAppUpdate]=useState<AppUpdateStatus|null>(null);
+  const checkAppUpdates=async(force=false)=>{
+    if(!bridge?.checkAppUpdates)return;
+    try{setAppUpdate(await bridge.checkAppUpdates(force));}catch{setToast('GrokDeck update check failed. Try again.');}
+  };
+  useEffect(()=>{
+    if(loading||demo||!prefs.checkReleases)return;
+    void checkAppUpdates();
+    const timer=setInterval(()=>void checkAppUpdates(),6*3600000);
+    return ()=>clearInterval(timer);
+  },[loading,demo,prefs.checkReleases]);
+  useEffect(()=>{
+    if(appUpdate?.status!=='downloading'||!bridge?.appUpdateStatus)return;
+    const timer=setInterval(()=>void bridge.appUpdateStatus!().then(setAppUpdate).catch(()=>{}),1000);
+    return ()=>clearInterval(timer);
+  },[appUpdate?.status]);
 
   const transcript = useRef<HTMLDivElement>(null),
     searchInput = useRef<HTMLInputElement>(null),
@@ -212,6 +288,12 @@ function App() {
             setPrefs({ ...defaults, ...p });
             prefsRef.current = { ...defaults, ...p };
             setInfo(i);
+            if (bridge.connectLive) {
+              setLiveConnecting(true);
+              try { const connected = await bridge.connectLive(); if (active) { setData(connected); setError(''); } }
+              catch { if (active) setError('Live connection unavailable. Showing saved data while we retry. Open Grok Bot and sign in on this computer.'); }
+              finally { if (active) setLiveConnecting(false); }
+            }
           }
         } else {
           const p = JSON.parse(
@@ -236,15 +318,14 @@ function App() {
     if (!bridge || demo) return;
     let active = true;
     const timer = setInterval(() => {
-      bridge
-        .snapshot()
+      (bridge.connectLive ? bridge.connectLive() : bridge.snapshot())
         .then((s) => {
-          if (active) setData(s);
+          if (active) { setData(s); setError(''); }
         })
         .catch(() => {
           if (active)
             setError(
-              "Cache refresh failed. Previously loaded discussions are still visible.",
+              "Live connection interrupted. Retrying automatically; previously loaded discussions remain visible.",
             );
         });
     }, 15000);
@@ -286,6 +367,50 @@ function App() {
     [data.agents],
   );
   const agent = agents.find((a) => a.id === selected);
+  useEffect(() => {
+    if(!live || !selected || !bridge?.liveMessages)return;
+    let active=true, busy=false;
+    const read = async () => {
+      if(busy || document.visibilityState !== 'visible' || !document.hasFocus())return;
+      busy=true;
+      try {
+        const response=await bridge.liveMessages!(selected);
+        if(active) {
+          setData(current => ({...current,agents:current.agents.map(a=>a.id===selected?{...a,messages:response.messages,cachedAt:Date.now()}:a)}));
+          if(followLatest.current)requestAnimationFrame(()=>{if(transcript.current)transcript.current.scrollTop=transcript.current.scrollHeight;});
+        }
+      } catch {if(active)setError('Live discussion refresh failed. Previously loaded messages remain visible.');}
+      finally {busy=false;}
+    };
+    void read();
+    const timer=setInterval(()=>void read(),2000);
+    return ()=>{active=false;clearInterval(timer);};
+  },[live,selected]);
+  const submitLive = async (a:Agent) => {
+    if(!bridge?.send || pendingSends[a.id])return;
+    const prompt=prefsRef.current.drafts[a.id]||'';
+    if(!prompt.trim())return;
+    const nonce=crypto.randomUUID(), replyToId=replyTargets[a.id]?.id;
+    setPendingSends(current=>({...current,[a.id]:{nonce,prompt,replyToId,status:'sending'}}));
+    let status='unknown';
+    try {status=(await bridge.send(a.id,prompt,nonce,replyToId)).status;}catch {/* Dispatch may have succeeded. Never retry automatically. */}
+    if(status==='accepted'||status==='rejected') {
+      setPendingSends(current=>{const next={...current};delete next[a.id];return next;});
+      if(status==='accepted') {save({drafts:{...prefsRef.current.drafts,[a.id]:''}});setReplyTargets(current=>{const next={...current};delete next[a.id];return next;});announce('Message accepted by Grok Bot.');followLatest.current=true;}
+      else setError('The message was rejected. Review the draft before sending again.');
+    } else setPendingSends(current=>({...current,[a.id]:{nonce,prompt,replyToId,status}}));
+  };
+  const checkAcceptance = async (a:Agent) => {
+    const pending=pendingSends[a.id];if(!pending||!bridge?.acceptance)return;
+    try {
+      const receipt=await bridge.acceptance(a.id,pending.nonce);
+      if(receipt.status==='accepted'||receipt.status==='rejected') {
+        setPendingSends(current=>{const next={...current};delete next[a.id];return next;});
+        if(receipt.status==='accepted'){save({drafts:{...prefsRef.current.drafts,[a.id]:''}});setReplyTargets(current=>{const next={...current};delete next[a.id];return next;});announce('Message accepted by Grok Bot.');}
+        else setError('The message was rejected. Review the draft before sending again.');
+      } else setPendingSends(current=>({...current,[a.id]:{...pending,status:receipt.status}}));
+    }catch {setError('Acceptance is still unknown. Check the discussion in Grok Bot before composing another message.');}
+  };
   const pinned = (a: Agent) => prefs.pins.includes(a.id) || a.pinned;
   const unread = (a: Agent) =>
     a.hasUnread && (prefs.seen[a.id] || 0) < a.lastActivityAt;
@@ -295,6 +420,8 @@ function App() {
   const openAgent = (a: Agent) => {
     setSelected(a.id);
     setChatQuery("");
+    setDiscussionSearchOpen(false);
+    setEmojiOpen(false);
     setMessageLimit(80);
     save({
       recents: [
@@ -337,7 +464,7 @@ function App() {
               : true,
     );
   const title =
-    view === "overview"
+    view === "computers" ? "Computers" : view === "overview"
       ? "Your deck"
       : view === "attention"
         ? "Needs attention"
@@ -388,6 +515,7 @@ function App() {
     }
   };
   useEffect(() => {
+    followLatest.current = true;
     if (transcript.current)
       transcript.current.scrollTop = chatQuery
         ? 0
@@ -452,6 +580,7 @@ function App() {
             attention.length,
           )}
           {nav("all", "All agents", <MessageSquare size={17} />, agents.length)}
+          {nav("computers", "Computers", <Monitor size={17} />)}
           {nav("pinned", "Pinned", <Pin size={17} />)}
           {nav("history", "Discussion library", <BookOpen size={17} />)}
         </nav>
@@ -486,7 +615,7 @@ function App() {
                 className="recent-item"
                 onClick={() => openAgent(a)}
               >
-                <Avatar agent={a} small />
+                <Avatar agent={a} small live={live} />
                 <span>{a.name}</span>
                 {unread(a) && <i className="unread-dot" />}
               </button>
@@ -501,13 +630,13 @@ function App() {
             <div>
               {demo
                 ? "Example workspace"
-                : data.source.available
+                : live ? "Live gateway connected" : data.source.available
                   ? "Local cache connected"
                   : "Connect your workspace"}
               <small>
                 {demo
                   ? "Preview · no real activity"
-                  : data.source.available
+                  : live ? "Discussion updates every 2s" : data.source.available
                     ? "Read-only · refreshes every 15s"
                     : "Grok Bot data stays on this device"}
               </small>
@@ -518,6 +647,10 @@ function App() {
             Settings & appearance
             <ChevronRight size={15} />
           </button>
+          <a className="designer-credit" href="https://ronmillar.com" target="_blank" rel="noopener noreferrer"
+            onClick={event=>{if(bridge?.openDesigner){event.preventDefault();void bridge.openDesigner().catch(()=>setToast('Could not open ronmillar.com.'));}}}>
+            GrokDeck by Ron Millar 2026 <ArrowUpRight size={11} aria-hidden="true" />
+          </a>
         </div>
       </aside>
       <main>
@@ -527,11 +660,17 @@ function App() {
             <strong>{title}</strong>
           </div>
           <div className="topbar-actions">
+                    <button className="icon-button" aria-label="Search agents" title="Search agents" aria-expanded={agentSearchOpen} aria-controls="agent-search-field" onClick={()=>{setAgentSearchOpen(open=>!open);setQuery('');}}><Search size={17}/></button>
+                    {agentSearchOpen && <div className="filter-input" id="agent-search-field">
+                      <input autoFocus aria-label="Search agents and discussions" placeholder="Search names or discussions…" value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==='Escape'){setAgentSearchOpen(false);setQuery('');}}}/>
+                      <button className="icon-button" aria-label="Close agent search" onClick={()=>{setAgentSearchOpen(false);setQuery('');}}><X size={13}/></button>
+                    </div>}
             {demo && <span className="demo-badge">EXAMPLE DATA</span>}
             <span className="cache-badge">
               <Clock3 size={13} />
-              Cached view
+              {live ? 'Live gateway' : 'Cached view'}
             </span>
+            {bridge?.connectLive && !demo && !live && <button className="button small-button" disabled={liveConnecting} onClick={()=>void connectLive()}>{liveConnecting?'Connecting…':'Retry connection'}</button>}
             <button
               className="icon-button"
               aria-label="Refresh cache"
@@ -549,6 +688,9 @@ function App() {
             </button>
           </div>
         </header>
+        {appUpdate&&['available','downloaded'].includes(appUpdate.status)&&<div className="alert" role="status">
+          <Download size={16}/><span>{appUpdate.message}</span><button className="button" onClick={()=>setSettings(true)}>Review update</button>
+        </div>}
         {(error || data.source.warning) && (
           <div className="alert" role="alert">
             <Bell size={16} />
@@ -614,7 +756,7 @@ function App() {
                   <span className="title-period">.</span>
                 </h1>
                 <p>
-                  {view === "overview"
+                  {view === "computers" ? "Read current computer status without starting or changing a computer." : view === "overview"
                     ? "A little less noise. A clearer view of what matters."
                     : view === "history"
                       ? "Pick up a thought. Find the discussion behind it."
@@ -632,7 +774,19 @@ function App() {
                 </div>
               )}
             </div>
-            {loading && !data.agents.length ? (
+            {view==='computers' ? <section className="computers-view" aria-label="Computers">
+              {!live ? <div className="empty-state"><Monitor size={28}/><h2>Connecting to your computers</h2><p>Computer status is read from your Mac bridge.</p><button className="button primary" disabled={liveConnecting||!bridge?.connectLive} onClick={()=>void connectLive()}>Retry connection</button></div> : <>
+                <div className="list-heading"><label><input type="checkbox" checked={activeComputersOnly} onChange={e=>setActiveComputersOnly(e.target.checked)}/> Active only</label><button className="button small-button" disabled={computersLoading} onClick={()=>void refreshComputers()}><RefreshCw size={14}/>{computersLoading?'Reading status…':'Refresh computers'}</button></div>
+                {computersError&&<p role="alert">{computersError}</p>}
+                {computers&&<p className="search-caption">Bots with running computers: {computers.computers.filter(c=>c.state==='running').length} · Bots checked: {computers.computers.length} · Status unavailable: {computers.computers.filter(c=>c.state==='unknown').length} · {computers.complete?'Complete result':'Partial result'} · {date(computers.checkedAt)}</p>}
+                {(computers?.computers||[]).filter(c=>!activeComputersOnly||c.state==='running').map(computer=><article className="computer-row" key={computer.agentId}>
+                  <Monitor size={21}/><div><strong>{computer.name}</strong><span className="computer-state">{computer.state==='running'?'Running':computer.state==='hibernated'?'Sleeping':computer.state==='absent'?'No computer':'Status unavailable'}</span>{computer.windows.map(window=><p key={window.index}>{window.label||`Window ${window.index+1}`}</p>)}{computer.error&&<p>Status could not be read for this agent.</p>}</div>
+                  <button className="button small-button" disabled={!agents.some(a=>a.id===computer.agentId)} onClick={()=>{const target=agents.find(a=>a.id===computer.agentId);if(target){setView('all');openAgent(target);}}}>Open chat <ArrowUpRight size={14}/></button>
+                </article>)}
+                {!computersLoading&&computers&&!computers.computers.some(c=>!activeComputersOnly||c.state==='running')&&<div className="empty-state"><h2>{activeComputersOnly?'No running bot computers observed':'No computers returned'}</h2><p>{computers.complete&&!computers.computers.some(c=>c.state==='unknown')?'Turn off Active only to include sleeping computers.':'Some statuses are unavailable. Refresh or turn off Active only to review them.'}</p></div>}
+                <p className="search-caption">Status is shown per bot; underlying computers may be shared. This view reads status only. Starting computers and opening their screens are not available here.</p>
+              </>}
+            </section> : loading && !data.agents.length ? (
               <div className="empty-state">
                 <LoaderCircle className="spin" />
                 <h2>Opening your deck…</h2>
@@ -687,7 +841,7 @@ function App() {
                         <strong>
                           {agents.length.toString().padStart(2, "0")}
                         </strong>
-                        <small>Across {data.sections.length} sections</small>
+                        <small>{live ? "Signed-in account" : `Across ${data.sections.length} sections`}</small>
                       </button>
                       <button
                         className="stat-card attention-stat"
@@ -701,7 +855,7 @@ function App() {
                           {attention.length.toString().padStart(2, "0")}
                           <i />
                         </strong>
-                        <small>Unread or awaiting a reply · cached</small>
+                        <small>{live ? "Latest gateway roster" : "Unread or awaiting a reply · cached"}</small>
                       </button>
                       <button
                         className="stat-card"
@@ -709,13 +863,13 @@ function App() {
                       >
                         <span>
                           <BookOpen size={16} />
-                          Discussion library
+                          {live ? "Loaded discussions" : "Discussion library"}
                         </span>
                         <strong>
                           {cachedCount.toString().padStart(2, "0")}
                         </strong>
                         <small>
-                          {messageCount.toLocaleString()} cached entries
+                          {messageCount.toLocaleString()} {live ? "loaded entries" : "cached entries"}
                         </small>
                       </button>
                     </div>
@@ -728,11 +882,11 @@ function App() {
                           <h3>Your next starting point</h3>
                           <p>
                             {attention.length
-                              ? `${attention.length} agents have unread results or a cached request for you. Start there, or return to a recent discussion.`
-                              : "You’re caught up with the cached roster. Revisit a discussion or explore another agent."}
+                              ? `${attention.length} agents have unread results or ${live ? "a request" : "a cached request"} for you. Start there, or return to a recent discussion.`
+                              : `You’re caught up with the ${live ? "gateway" : "cached"} roster. Revisit a discussion or explore another agent.`}
                           </p>
                           <span>
-                            Based on the local roster · last written{" "}
+                            {live ? "Gateway roster checked " : "Based on the local roster · last written "}
                             {age(data.source.cacheUpdatedAt)}
                           </span>
                         </div>
@@ -758,7 +912,7 @@ function App() {
                               className="recent-card"
                               onClick={() => openAgent(a)}
                             >
-                              <Avatar agent={a} />
+                              <Avatar agent={a} live={live} />
                               <strong>{a.name}</strong>
                               <span>{a.preview}</span>
                               <small>
@@ -778,31 +932,10 @@ function App() {
                       ? "On your radar"
                       : `${filtered.length} ${view === "history" ? "discussions" : "agents"}`}
                   </h2>
-                  <div className="list-controls">
-                    <div className="filter-input">
-                      <Search size={15} />
-                      <input
-                        aria-label="Search agents and discussions"
-                        placeholder="Search names or discussions…"
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                      />
-                      {query && (
-                        <button
-                          className="icon-button"
-                          aria-label="Clear search"
-                          onClick={() => setQuery("")}
-                        >
-                          <X size={13} />
-                        </button>
-                      )}
-                    </div>
-                  </div>
                 </div>
                 {query && (
                   <p className="search-caption">
-                    Searching agent names, latest results, and cached discussion
-                    text.
+                    Searching agent names, latest results, and {live ? "loaded" : "cached"} discussion text.
                   </p>
                 )}
                 <div className="agent-list">
@@ -814,8 +947,8 @@ function App() {
                       </h3>
                       <p>
                         {query
-                          ? "Try another name or phrase. Only locally cached history is searchable."
-                          : "Explore all agents or refresh your cache."}
+                          ? `Try another name or phrase. Only ${live ? "loaded" : "locally cached"} history is searchable.`
+                          : `Explore all agents or refresh your ${live ? "roster" : "cache"}.`}
                       </p>
                     </div>
                   ) : (
@@ -828,7 +961,7 @@ function App() {
                           className="agent-main"
                           onClick={() => openAgent(a)}
                         >
-                          <Avatar agent={a} />
+                          <Avatar agent={a} live={live} />
                           <div className="agent-copy">
                             <div>
                               <strong>{a.name}</strong>
@@ -846,7 +979,7 @@ function App() {
                               ? "Reply requested"
                               : unread(a)
                                 ? "Unread"
-                                : "Cached"}
+                                : live ? "Gateway" : "Cached"}
                           </span>
                           <time title={date(a.lastActivityAt)}>
                             {age(a.lastActivityAt)}
@@ -867,9 +1000,9 @@ function App() {
                   <span>
                     {demo
                       ? "Example data"
-                      : `Roster last written ${date(data.source.cacheUpdatedAt)}`}
+                      : `${live ? "Gateway roster checked" : "Roster last written"} ${date(data.source.cacheUpdatedAt)}`}
                   </span>
-                  <span>Cached states aren’t live activity</span>
+                  <span>{live ? "Discussion updates every 2 seconds" : "Cached states aren’t live activity"}</span>
                 </div>
                 {data.warnings.length > 0 && (
                   <details className="cache-warnings">
@@ -897,11 +1030,11 @@ function App() {
                 >
                   <ArrowLeft size={18} />
                 </button>
-                <Avatar agent={agent} small />
+                <Avatar agent={agent} small live={live} />
                 <div>
                   <h2>{agent.name}</h2>
                   <span>
-                    {agent.section} · {agent.messages.length} cached entries
+                    {agent.section} · {agent.messages.length} {live ? "loaded entries" : "cached entries"}
                   </span>
                 </div>
                 <button
@@ -920,15 +1053,12 @@ function App() {
                 </button>
               </div>
               <div className="discussion-toolbar">
-                <div className="filter-input">
-                  <Search size={14} />
-                  <input
-                    aria-label="Search this discussion"
-                    placeholder="Find in discussion…"
-                    value={chatQuery}
-                    onChange={(e) => setChatQuery(e.target.value)}
-                  />
-                </div>
+                <button className="icon-button" aria-label="Search discussion" title="Search discussion" aria-expanded={discussionSearchOpen} aria-controls="discussion-search-field" onClick={()=>{setDiscussionSearchOpen(open=>!open);setChatQuery('');}}><Search size={17}/></button>
+                {discussionSearchOpen && <div className="filter-input" id="discussion-search-field">
+                  <input autoFocus aria-label="Search this discussion" placeholder="Find in discussion…" value={chatQuery} onChange={e=>setChatQuery(e.target.value)} onKeyDown={e=>{if(e.key==='Escape'){setDiscussionSearchOpen(false);setChatQuery('');}}}/>
+                  <button className="icon-button" aria-label="Close discussion search" onClick={()=>{setDiscussionSearchOpen(false);setChatQuery('');}}><X size={13}/></button>
+                </div>}
+                <button className="icon-button" aria-label="Jump to latest" title="Jump to latest" onClick={()=>{followLatest.current=true;if(transcript.current)transcript.current.scrollTop=transcript.current.scrollHeight;}}><ArrowDown size={16}/></button>
                 <button
                   className={`icon-button ${notesOpen ? "is-pinned" : ""}`}
                   aria-label="Toggle private notes"
@@ -996,7 +1126,7 @@ function App() {
               <div className="transcript-meta">
                 <span>
                   <Clock3 size={12} />
-                  {agent.cachedAt
+                  {live ? 'Live discussion · latest 100 entries' : agent.cachedAt
                     ? `History cached ${date(agent.cachedAt)}`
                     : "No transcript cached"}
                 </span>
@@ -1009,19 +1139,19 @@ function App() {
                   Messages only
                 </label>
               </div>
-              <div className="transcript" ref={transcript}>
+              <div className="transcript" ref={transcript} onScroll={e=>{const el=e.currentTarget;followLatest.current=el.scrollHeight-el.scrollTop-el.clientHeight<80;}}>
                 {!visibleMessages.length ? (
                   <div className="empty-state">
                     <MessageSquare size={28} />
                     <h3>
                       {chatQuery
                         ? "No matching entries"
-                        : "This discussion isn’t cached yet"}
+                        : live ? "Loading current discussion…" : "This discussion isn’t cached yet"}
                     </h3>
                     <p>
                       {chatQuery
                         ? "Try another phrase."
-                        : "Open it in Grok Bot, then return and refresh. Cached history may be incomplete."}
+                        : live ? "The latest messages are requested from the gateway." : "Open it in Grok Bot, then return and refresh. Cached history may be incomplete."}
                     </p>
                     <button className="button" onClick={() => handoff(agent)}>
                       Open in Grok Bot <ExternalLink size={14} />
@@ -1068,6 +1198,8 @@ function App() {
                               message={m}
                               agent={agent}
                               copied={announce}
+                              live={live}
+                              onReply={live ? ()=>{if(pendingSends[agent.id])return;setReplyTargets(current=>({...current,[agent.id]:{id:m.id,content:m.content}}));requestAnimationFrame(()=>composer.current?.focus());} : undefined}
                             />
                           </React.Fragment>
                         );
@@ -1077,11 +1209,17 @@ function App() {
               </div>
               <div className="detail-bottom">
                 <div className="draft-label">
-                  <span>DRAFT A FOLLOW-UP</span>
+                  <span>{live ? "MESSAGE" : "DRAFT A FOLLOW-UP"}</span>
                   <span>Saved on this device</span>
                 </div>
+                {replyTargets[agent.id] && <div className="reply-context" role="region" aria-label="Reply context">
+                  <Reply size={15}/><div><strong>Replying to a message</strong><p>{replyTargets[agent.id].content.slice(0,240)}</p></div>
+                  <button className="icon-button" aria-label="Cancel reply" disabled={!!pendingSends[agent.id]} onClick={()=>setReplyTargets(current=>{const next={...current};delete next[agent.id];return next;})}><X size={14}/></button>
+                </div>}
                 <textarea
+                  ref={composer}
                   aria-label="Draft follow-up"
+                  disabled={!!pendingSends[agent.id]}
                   placeholder={`A thought for ${agent.name}…`}
                   value={prefs.drafts[agent.id] || ""}
                   onChange={(e) =>
@@ -1093,8 +1231,15 @@ function App() {
                     })
                   }
                 />
+                {emojiOpen && <div className="emoji-palette" role="group" aria-label="Quick emoji replies">{['🙂','👍','❤️','🎉','🤔','👀'].map(emoji=><button key={emoji} type="button" className="button small-button" aria-label={`Insert ${emoji}`} disabled={!!pendingSends[agent.id]} onClick={()=>{save({drafts:{...prefsRef.current.drafts,[agent.id]:(prefsRef.current.drafts[agent.id]||'')+emoji}});composer.current?.focus();}}>{emoji}</button>)}</div>}
                 <div className="draft-actions">
-                  <span>Sending happens in Grok Bot.</span>
+                  <button className="icon-button" aria-label="Emoji" title="Emoji" aria-expanded={emojiOpen} disabled={!!pendingSends[agent.id]} onClick={()=>setEmojiOpen(open=>!open)}><Smile size={17}/></button>
+                  <span>{live ? 'Sends through your Mac bridge.' : 'Sending happens in Grok Bot.'}</span>
+                  {live && (pendingSends[agent.id] ? <div role="status">
+                    <span>{pendingSends[agent.id].status==='sending'?'Sending…':'Delivery is uncertain. Do not resend.'}</span>
+                    <button className="button small-button" disabled={pendingSends[agent.id].status==='sending'} onClick={()=>void checkAcceptance(agent)}>Check status</button>
+                  </div> : <button className="button primary small-button" disabled={!prefs.drafts[agent.id]?.trim()} onClick={()=>void submitLive(agent)}>Send message</button>)}
+                  {live && <button className="button small-button" onClick={async()=>{try{const result=await bridge!.interrupt!(agent.id);announce(result.hadActiveRun?'Stop requested.':'No active run to stop.');}catch{setError('Could not confirm stopping the run. Check Grok Bot.');}}}>Stop run</button>}
                   <button
                     className="button small-button"
                     onClick={async () => {
@@ -1220,9 +1365,8 @@ function App() {
               <hr />
               <h3>Grok Bot connection</h3>
               <p>
-                GrokDeck reads the local agent roster and cached transcripts. It
-                never modifies Grok Bot’s data, reads its credentials, or sends
-                messages automatically.
+                Cached mode reads local history. Live mode uses your authenticated local bridge;
+                sending requires the Send button. Grok Bot session credentials stay in the host bridge.
               </p>
               <div className="source-path">
                 {data.source.path || "Default Grok Bot data folder"}
@@ -1250,7 +1394,45 @@ function App() {
                 </button>
               </div>
               <hr />
-              <h3>Version & compatibility</h3>
+              <h3>Connect your own Grok Bot account</h3>
+              <ol><li>Open Grok Bot on this computer and sign in to your account.</li><li>Open GrokDeck; it connects automatically. Check that your agents appear.</li><li>To use your iPhone, start the phone connection below and copy its one-time setup.</li><li>On iPhone, open GrokDeck Settings → Quick pairing and paste the setup within five minutes.</li></ol>
+              <p>Your account stays on this computer. Each person runs their own helper; there is no shared GrokDeck account. Never send your setup code to someone else.</p>
+              <h3>Connect your iPhone</h3>
+              <p>Use the same trusted network on both devices. Keep GrokDeck open while your phone is connected. Once enabled, this connection resumes when GrokDeck opens.</p>
+              {phone?.active ? <>
+                <p role="status">Phone connection ready: {phone.endpoint}</p>
+                <button className="button" onClick={async()=>{
+                  try{const result=await bridge!.copyPhoneSetup!();if(result.copied)setPhoneMessage('Setup copied. Paste it into GrokDeck Settings on your iPhone within five minutes.');}
+                  catch{setPhoneMessage('Could not copy setup. Try again.');}
+                }}>Copy phone setup</button>
+                <button className="button" disabled={phoneBusy} onClick={async()=>{
+                  setPhoneBusy(true);try{await bridge!.stopPhone!();setPhone(await bridge!.phoneHosts!());setPhoneMessage('Phone connection stopped.');}catch{setPhoneMessage('Could not stop phone connection.');}finally{setPhoneBusy(false);}
+                }}>Stop phone connection</button>
+              </> : <>
+                <label>Private network address <select aria-label="Phone network address" value={phoneAddress} onChange={e=>setPhoneAddress(e.target.value)}>
+                  <option value="">Choose your network</option>
+                  {phone?.hosts?.map(row=><option key={row.name+row.address} value={row.address}>{row.name} · {row.address}</option>)}
+                </select></label>
+                <button className="button" disabled={!phoneAddress||phoneBusy} onClick={async()=>{
+                  setPhoneBusy(true);setPhoneMessage('');try{setPhone(await bridge!.startPhone!(phoneAddress));}catch{setPhoneMessage('Could not start phone connection. Check Grok Bot sign-in and the selected network.');}finally{setPhoneBusy(false);}
+                }}>{phoneBusy?'Starting…':'Start phone connection'}</button>
+              </>}
+              {phoneMessage&&<p role="status">{phoneMessage}</p>}
+              <h3>GrokDeck updates</h3>
+              <p>Check GitHub for new GrokDeck releases. Public downloads do not require a GitHub account. In-app installation requires a signed build; otherwise download the installer manually.</p>
+              <div className="release-settings">
+                <button className="button" onClick={()=>void checkAppUpdates(true)} disabled={['checking','downloading','installing'].includes(appUpdate?.status||'')}>Check GrokDeck updates</button>
+                <button className="button" onClick={()=>void bridge?.openDownloads?.()}>Open downloads</button>
+                {appUpdate&&<p role="status">{appUpdate.message}</p>}
+                {appUpdate?.status==='available'&&appUpdate.canInstall&&<button className="button" onClick={async()=>{
+                  setAppUpdate({...appUpdate,status:'downloading',message:'Downloading GrokDeck…'});
+                  try{setAppUpdate(await bridge!.downloadUpdate!());}catch{setToast('Update download failed. Check again.');void checkAppUpdates(true);}
+                }}>Download GrokDeck {appUpdate.version}</button>}
+                {appUpdate?.status==='downloaded'&&<button className="button" disabled={Object.keys(pendingSends).length>0} onClick={async()=>{
+                  try{await saves.current;setAppUpdate(await bridge!.installUpdate!());}catch{setToast('Resolve pending message delivery before restarting.');}
+                }}>Restart and install</button>}
+              </div>
+              <h3>Grok Bot compatibility</h3>
               <div className="version-row">
                 <span>GrokDeck</span>
                 <strong>
@@ -1279,7 +1461,7 @@ function App() {
                     checked={prefs.checkReleases}
                     onChange={(e) => save({ checkReleases: e.target.checked })}
                   />{" "}
-                  Check for Grok Bot releases when the app opens and every six
+                  Check for GrokDeck and Grok Bot releases when the app opens and every six
                   hours
                 </label>
                 <button
@@ -1373,7 +1555,7 @@ function App() {
                 .slice(0, 40)
                 .map((a) => (
                   <button key={a.id} onClick={() => openAgent(a)}>
-                    <Avatar agent={a} small />
+                    <Avatar agent={a} small live={live} />
                     <div>
                       <strong>{a.name}</strong>
                       <span>
@@ -1417,10 +1599,14 @@ function MessageCard({
   message: m,
   agent,
   copied,
+  live = false,
+  onReply,
 }: {
   message: Message;
   agent: Agent;
   copied: (s: string) => void;
+  live?: boolean;
+  onReply?: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const isLong = m.content.length > 10000;
@@ -1445,6 +1631,7 @@ function MessageCard({
               })
             : "—"}
         </time>
+        {onReply && <button className="icon-button" aria-label="Reply to message" title="Reply to message" onClick={onReply}><Reply size={13}/></button>}
         <button
           className="icon-button"
           aria-label="Copy message"
@@ -1488,7 +1675,7 @@ function MessageCard({
       )}
       {m.streaming && (
         <small className="streaming-note">
-          Was streaming when cached · open Grok Bot for current state
+          {live ? "Receiving updates from Grok Bot…" : "Was streaming when cached · open Grok Bot for current state"}
         </small>
       )}
     </article>

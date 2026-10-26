@@ -1,0 +1,2 @@
+import {defineConfig} from 'vite';
+export default defineConfig({plugins:[{name:'disable-webcodecs',transform(code,id){if(id.endsWith('/lib/util/browser.js'))return code.replace('await _checkWebCodecsH264DecodeSupport()', 'false');}}],build:{outDir:'ios/GrokDeck/Viewer',emptyOutDir:false,lib:{entry:'scripts/viewer/client.js',name:'GrokDeckViewer',formats:['iife'],fileName:()=> 'viewer.js'},minify:true}});

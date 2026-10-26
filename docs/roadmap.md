@@ -1,3 +1,11 @@
+# Distribution goal and current gates
+
+Keep Gamedesigner/grokdeck PRIVATE until Ron explicitly requests publication. Prepare an easy-to-install Mac, Windows and iPhone utility for that eventual release. Visible credit: “GrokDeck by Ron Millar 2026”, linking to https://ronmillar.com.
+
+The goal is not complete merely because CI passes. Completion requires installed-app onboarding without developer commands, verified Mac and Windows live access, practical iPhone pairing/distribution, signed and tested self-updates, and an update-maintenance path that can use Codex on the Mac mini plus hosted Windows GitHub Actions while the Windows PC is off.
+
+Current progress: hosted Mac/Windows CI exists; explicit version gating and private self-update detection exist; the packaged desktop can now start its own bridge; Mac real-account reads work on 0.75.8. Built-in LAN pairing is now implemented with single-use setup codes; packaged Mac startup/resume, Swift HTTPS exchange, and simulator native Paste-to-live-roster are verified; physical phone quick-pair verification is pending. Private0.2.2 releases now contain signed/notarized Mac installers and Windows previews. Real signed Mac0.2.1→0.2.2 installation, relaunch and draft preservation passed on Apple Silicon, including migration from an Intel binary under Rosetta. Six-hour Mac mini compatibility maintenance is active. The iOS0.2.2 archive and distribution export succeeded; upload needs an App Store Connect app record and web sign-in. Still open: signed-helper Keychain consent, Windows credential/runtime and signing verification, iOS distribution, MacBook Pro/Intel hardware checks, and an observed vendor-update-to-Codex-to-tested-build maintenance cycle. Unknown versions must not silently authorize unreviewed commands.
+
 # Next milestones
 
 ## First build verification
@@ -9,7 +17,8 @@
 
 ## Complete the integration
 
-- Investigate an authenticated, supported connection for direct discussion retrieval, messaging, and live status. Do not equate a local cache with backend access.
+- Experimental direct discussion reads and text sends are verified against 0.75.0. Next validate reconnect/expiry and real-device sending under varied network conditions; no public API compatibility is promised.
+- Replace foreground transcript polling with a verified event-stream adapter when needed; preserve scrollback and pending-send semantics.
 - Keep the connection adapter separate from UI code and document version compatibility.
 - Improve attachments, permissions, agent exchanges, and non-text transcript rendering from observed schemas.
 - Verify Ghidra setup and investigate native components only when a concrete integration question depends on them.
@@ -17,8 +26,8 @@
 ## Maintainability and distribution
 
 - Test the adapter against new Grok Bot releases advertised by the official feed; availability notifications do not imply verified compatibility.
-- Add signed GrokDeck update manifests, rollback, and private distribution.
-- Sign Windows builds and sign/notarize Mac builds before wider distribution.
+- Signed Mac manifests and private distribution are verified; retain prior releases for manual rollback. Automatic downgrades remain disabled.
+- Configure Windows signing before wider distribution; Mac signing/notarization is verified.
 - Add an explicit migration/backup policy for local notes and customization.
 
 ## Product exploration

@@ -1,0 +1,65 @@
+name: GrokDeck
+options:
+  bundleIdPrefix: com.gamedesigner
+  deploymentTarget:
+    iOS: '18.0'
+settings:
+  base:
+    SWIFT_VERSION: '6.0'
+    TARGETED_DEVICE_FAMILY: '1,2'
+    CODE_SIGN_STYLE: Automatic
+    GENERATE_INFOPLIST_FILE: NO
+    MARKETING_VERSION: '0.2.5'
+    CURRENT_PROJECT_VERSION: 5
+targets:
+  GrokDeck:
+    type: application
+    platform: iOS
+    sources:
+      - path: GrokDeck
+        excludes: [Viewer]
+      - path: GrokDeck/Viewer
+        type: folder
+        buildPhase: resources
+    info:
+      path: GrokDeck/Info.plist
+      properties:
+        CFBundleDisplayName: GrokDeck
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        NSLocalNetworkUsageDescription: Connect to your private GrokDeck bridge to read discussions and send messages.
+        LSApplicationQueriesSchemes: [grokbot]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.gamedesigner.grokdeck.ios
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+  GrokDeckTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [GrokDeckTests]
+    dependencies:
+      - target: GrokDeck
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+  GrokDeckUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [GrokDeckUITests]
+    dependencies:
+      - target: GrokDeck
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  GrokDeck:
+    build:
+      targets:
+        GrokDeck: all
+    test:
+      targets: [GrokDeckTests, GrokDeckUITests]

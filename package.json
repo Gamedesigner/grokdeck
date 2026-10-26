@@ -1,10 +1,10 @@
 {
   "name": "grokdeck",
-  "version": "0.1.0",
+  "version": "0.2.5",
   "private": true,
   "description": "A personal command deck for your Grok Bot conversations",
   "author": "Gamedesigner",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "main": "desktop/main.cjs",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
@@ -15,22 +15,33 @@
     "package:mac": "npm run build && electron-builder --mac zip dmg --arm64 --x64 --publish never",
     "package:win": "npm run build && electron-builder --win nsis zip --x64 --publish never",
     "package:dir": "npm run build && electron-builder --dir --publish never",
-    "test:desktop": "node scripts/desktop-smoke.mjs"
+    "test:desktop": "electron scripts/electron-bridge-smoke.cjs && node scripts/desktop-smoke.mjs",
+    "bridge": "node bridge/server.mjs",
+    "bridge:live": "electron bridge/live.cjs",
+    "bridge:lan": "node bridge/lan.mjs",
+    "maintenance:check": "node scripts/check-compatibility.mjs",
+    "package:mac:signed": "node scripts/package-mac-signed.mjs",
+    "build:viewer": "vite build --config scripts/viewer-vite.config.mjs"
   },
   "dependencies": {
+    "electron-updater": "6.8.11",
     "lucide-react": "^0.577.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-markdown": "^10.1.0",
-    "remark-gfm": "^4.0.1"
+    "remark-gfm": "^4.0.1",
+    "selfsigned": "5.5.0",
+    "ws": "8.22.0"
   },
   "devDependencies": {
+    "@novnc/novnc": "1.6.0",
     "@playwright/test": "^1.58.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^6.0.0",
     "electron": "45.0.0",
     "electron-builder": "26.18.0",
+    "js-yaml": "^4.3.2",
     "typescript": "^5.9.3",
     "vite": "8.3.5"
   },
@@ -44,11 +55,14 @@
     "files": [
       "dist/**/*",
       "desktop/**/*",
-      "package.json"
+      "bridge/**/*",
+      "package.json",
+      "LICENSE",
+      "THIRD_PARTY.md"
     ],
     "mac": {
       "category": "public.app-category.productivity",
-      "identity": null,
+      "identity": "-",
       "hardenedRuntime": true,
       "icon": "build/icon.png"
     },
@@ -65,7 +79,22 @@
       "perMachine": false,
       "deleteAppDataOnUninstall": false
     },
-    "artifactName": "GrokDeck-${version}-${os}-${arch}.${ext}"
+    "artifactName": "GrokDeck-${version}-${os}-${arch}.${ext}",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Gamedesigner",
+        "repo": "grokdeck",
+        "private": true
+      }
+    ],
+    "electronFuses": {
+      "runAsNode": false,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true
+    }
   },
   "type": "module"
 }

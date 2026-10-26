@@ -21,7 +21,7 @@ Format-aware inspection of real persistence files established these current shap
 
 `message` entries have explicit roles. `send-message` entries hold messages sent by the agent; text is in `message.content`. Other entry kinds are retained as placeholders where the companion cannot render them. History may contain only a recent subset and cannot establish completeness or current agent execution state.
 
-The packaged main-core bundle declares agent activation through `grokbot://app/v1/agent?id=<id>`. GrokDeck constrains links to this observed route, verifies that IDs belong to its current roster, and leaves sending/approval execution to the official app. Runtime handoff must be checked on each platform.
+The packaged main-core bundle declares agent activation through `grokbot://app/v1/agent?id=<id>`. GrokDeck constrains links to this observed route, verifies that IDs belong to its current roster, and leaves approvals and richer actions in the official app. Sending is supported separately through the opt-in experimental gateway adapter. Runtime handoff must be checked on each platform.
 
 ## Preferences and refresh
 
@@ -33,4 +33,8 @@ The shipped main-core bundle defines the update base URL `https://api2.cursor.sh
 
 ## Distribution
 
-Electron Builder packages renderer output and the desktop bridge/adapter only. GitHub Actions tests first, then builds separate macOS and Windows artifacts. Installation bundles are initially unsigned; signing and notarization are separate release gates. The app has no remote control server, listening network API, or cloud relay.
+Electron Builder packages renderer output and the desktop bridge/adapter only. GitHub Actions tests first, then builds separate macOS and Windows artifacts. Installation bundles are initially unsigned; signing and notarization are separate release gates. Connect live starts a bundled rendererless helper on authenticated loopback when no existing live bridge is available. Quitting the desktop app stops only the helper it started; it never stops an independently running bridge. Separately launched developer bridge commands provide authenticated loopback access and optional pinned HTTPS on one explicit RFC1918 address. No cloud relay or public listener is created.
+
+## Experimental live connection
+
+See [the connection ledger](live-connection.md). The standalone Electron helper reads the active saved sign-in through `safeStorage` without executing vendor JavaScript. Session contents stay in the host process. Discovery uses JSON Connect RPC at the observed vendor backend, then a credential-restricted HTTPS gateway. The bridge exposes a narrow prompt/receipt/transcript/interruption API, rather than arbitrary vendor commands. Membership and mutations are bound to one account/team, and the helper refuses an account/team change until restarted. UI clients must opt into live mode. They distinguish uncertain delivery, retain the message nonce, and never automatically resend. Discussion updates currently use foreground polling rather than a persistent event stream.

@@ -1,5 +1,23 @@
 const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("grokdeck", {
+  checkAppUpdates: (force=false)=>ipcRenderer.invoke('deck:app-updates',force),
+  appUpdateStatus: ()=>ipcRenderer.invoke('deck:app-update-status'),
+  downloadUpdate: ()=>ipcRenderer.invoke('deck:download-update'),
+  installUpdate: ()=>ipcRenderer.invoke('deck:install-update'),
+  openDownloads: ()=>ipcRenderer.invoke('deck:open-downloads'),
+  phoneHosts: ()=>ipcRenderer.invoke('deck:phone-hosts'),
+  startPhone: host=>ipcRenderer.invoke('deck:phone-start',host),
+  stopPhone: ()=>ipcRenderer.invoke('deck:phone-stop'),
+  copyPhoneSetup: ()=>ipcRenderer.invoke('deck:phone-copy-setup'),
+  openDesigner: ()=>ipcRenderer.invoke('deck:open-designer'),
+  getAvatar: id => ipcRenderer.invoke("deck:avatar",id),
+  computers: () => ipcRenderer.invoke("deck:computers"),
+  connectLive: () => ipcRenderer.invoke("deck:connect-live"),
+  disconnectLive: () => ipcRenderer.invoke("deck:disconnect-live"),
+  liveMessages: id => ipcRenderer.invoke("deck:live-messages",id),
+  send: (id,prompt,nonce,replyToId) => ipcRenderer.invoke("deck:send",id,prompt,nonce,replyToId),
+  acceptance: (id,nonce) => ipcRenderer.invoke("deck:acceptance",id,nonce),
+  interrupt: id => ipcRenderer.invoke("deck:interrupt",id),
   snapshot: () => ipcRenderer.invoke("deck:snapshot"),
   checkReleases: (force = false) =>
     ipcRenderer.invoke("deck:check-releases", force),
