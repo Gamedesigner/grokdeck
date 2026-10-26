@@ -28,6 +28,15 @@ Apple Silicon app on the Mac mini and the Intel app on a suitable machine.
 Retain ZIPs, DMGs, blockmaps and `latest-mac.yml` together. A successful notarized
 build is a prerequisite, not proof of the private updater's download/restart path.
 
+For a real Mac update integration test, set `GROKDECK_UPDATE_BASELINE` to an older
+signed `.app` and `GROKDECK_UPDATE_EXPECTED` to the published stable target version,
+then run `node scripts/update-install-smoke.mjs`. It copies the baseline into a
+fresh cache folder and uses an isolated profile. The test calls the real release
+check, download, and restart APIs, requires app replacement and relaunch, verifies
+the resulting signature/Gatekeeper status, and reopens the updated app to check
+that a local draft survived. It does not send bot messages or replace the user's
+installed app. Test copies remain in the reported folder for inspection.
+
 This updates GrokDeck, not Grok Bot. Newly detected Grok Bot versions are never automatically added to the live-protocol allowlist: an app update must carry an explicitly reviewed adapter. Versions 0.75.0 and 0.75.8 are currently allowed; all other versions fail closed for live requests. Version changes invalidate gateway discovery cache. The bridge reports the detected source version rather than a fixed label.
 
 The iPhone app is not replaced by the desktop updater. Its Mac-hosted bridge receives protocol fixes when the helper is restarted; native iOS app updates still require a device build or a future TestFlight distribution.
