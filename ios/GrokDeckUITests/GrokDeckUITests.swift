@@ -26,7 +26,19 @@ final class GrokDeckUITests: XCTestCase {
     app.launchArguments = ["--ui-testing"]
     app.launch()
     app.buttons["Settings"].tap()
-    XCTAssertTrue(app.textFields["bridge-address"].waitForExistence(timeout: 5))
+    XCTAssertTrue(app.staticTexts["1. Sign in to Grok Bot on your Mac or Windows PC."].waitForExistence(timeout: 5))
+    // The setup walkthrough precedes manual pairing. SwiftUI Form lazily
+    // creates offscreen rows, so reach them as a user would on a small phone.
+    let address = app.textFields["bridge-address"]
+    for _ in 0..<6 {
+      if address.exists && address.isHittable { break }
+      app.swipeUp()
+    }
+    XCTAssertTrue(address.exists && address.isHittable)
+    for _ in 0..<3 {
+      if app.buttons["Connect"].exists && app.buttons["Connect"].isHittable { break }
+      app.swipeUp()
+    }
     XCTAssertTrue(app.secureTextFields["pairing-key"].exists)
     XCTAssertTrue(app.buttons["Connect"].exists)
   }
