@@ -353,6 +353,10 @@ struct DiscussionView: View {
       }
       Color.clear.frame(height: 1).listRowSeparator(.hidden).id("discussion-bottom")
     }
+    .listStyle(.plain)
+    .scrollContentBackground(.hidden)
+    .scrollDismissesKeyboard(.interactively)
+    .background(Color(uiColor: .systemBackground))
     .onChange(of: messages.last?.id) { _, latest in
       guard latest != nil, !didScrollToLatest else { return }
       didScrollToLatest = true
@@ -391,7 +395,7 @@ struct DiscussionView: View {
         }.accessibilityLabel("Discussion actions")
       }
     }
-    .safeAreaInset(edge: .bottom) {
+    .safeAreaInset(edge: .bottom, spacing: 0) {
       if store.isLive {
         liveComposer
       } else { VStack(alignment: .leading, spacing: 8) {
@@ -402,7 +406,7 @@ struct DiscussionView: View {
       } label: {
         Label("Draft a follow-up", systemImage: "square.and.pencil").frame(maxWidth: .infinity)
       }.buttonStyle(.borderedProminent)
-      }.padding().background(.bar) }
+      }.padding().background(Color(uiColor: .systemBackground)) }
     }
     .sheet(isPresented: $showingDraft) {
       NavigationStack {
@@ -448,7 +452,7 @@ struct DiscussionView: View {
     }
   }
   private var liveComposer: some View {
-    VStack(alignment: .leading, spacing: 8) {
+    VStack(alignment: .leading, spacing: 10) {
       replyStrip
       if let pending {
         switch pending.state {
@@ -465,6 +469,23 @@ struct DiscussionView: View {
         }
       }
       if !store.liveEnabled { Text("Live messaging is disconnected. Reconnect your Mac before sending.").font(.caption).foregroundStyle(.orange) }
+      HStack(alignment: .bottom) {
+        TextField("Message \(agent.name)", text: $draft, axis: .vertical)
+          .lineLimit(2...6).textFieldStyle(.plain)
+          .padding(.horizontal, 4).padding(.vertical, 8)
+          .accessibilityIdentifier("message-composer")
+          .focused($composerFocused)
+          .disabled(pending?.blocksNewSend == true)
+        Button("Send", systemImage: "arrow.up") { Task {
+          await store.send(agent, prompt: draft, replyToId: selectedReply?.id)
+          clearAcceptedDraft()
+          await load()
+        } }.labelStyle(.iconOnly).accessibilityLabel("Send message")
+          .buttonStyle(.borderedProminent).buttonBorderShape(.circle)
+          .controlSize(.large)
+          .disabled(!store.liveEnabled || pending?.blocksNewSend == true || store.busyAgents.contains(agent.id)
+            || draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || draft.utf8.count > 64 * 1024)
+      }
       HStack(spacing: 0) {
         ForEach(Array(quickEmoji.enumerated()), id: \.offset) { index, emoji in
           Button { draft += emoji; composerFocused = true } label: {
@@ -474,21 +495,11 @@ struct DiscussionView: View {
             .disabled(pending?.blocksNewSend == true)
         }
       }.accessibilityElement(children: .contain).accessibilityLabel("Quick emoji replies")
-      HStack(alignment: .bottom) {
-        TextField("Message \(agent.name)", text: $draft, axis: .vertical)
-          .lineLimit(1...4).textFieldStyle(.roundedBorder).accessibilityIdentifier("message-composer")
-          .focused($composerFocused)
-          .disabled(pending?.blocksNewSend == true)
-        Button("Send", systemImage: "arrow.up") { Task {
-          await store.send(agent, prompt: draft, replyToId: selectedReply?.id)
-          clearAcceptedDraft()
-          await load()
-        } }.labelStyle(.iconOnly).accessibilityLabel("Send message")
-          .buttonStyle(.borderedProminent)
-          .disabled(!store.liveEnabled || pending?.blocksNewSend == true || store.busyAgents.contains(agent.id)
-            || draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || draft.utf8.count > 64 * 1024)
-      }
-    }.padding().background(.bar)
+    }
+    .padding(12)
+    .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 24))
+    .padding(.horizontal, 12).padding(.top, 8).padding(.bottom, 8)
+    .background(Color(uiColor: .systemBackground))
   }
   private func clearAcceptedDraft() {
     if let pending, pending.state == .accepted,
@@ -549,7 +560,7 @@ struct DiscussionView: View {
         Text(store.isLive ? "Reply is updating…" : "Was streaming when cached. Open Grok Bot for current state.")
           .font(.caption2).foregroundStyle(.orange)
       }
-    }.padding(.vertical, 6).contextMenu {
+    }.padding(.vertical, 10).listRowSeparator(.hidden).contextMenu {
       Button("Reply", systemImage: "arrowshape.turn.up.left") { selectReply(message) }
         .disabled(pending?.blocksNewSend == true)
     }
