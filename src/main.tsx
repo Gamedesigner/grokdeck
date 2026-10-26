@@ -40,6 +40,7 @@ import type {
   Preferences,
   Snapshot,
   ReleaseStatus,
+  AppUpdateStatus,
   ComputersResponse,
 } from "./types";
 import { demoSnapshot } from "./demo";
@@ -209,6 +210,23 @@ function App() {
     const timer = setInterval(() => void checkReleases(), 6 * 3600000);
     return () => clearInterval(timer);
   }, [loading, demo, prefs.checkReleases]);
+
+  const [appUpdate,setAppUpdate]=useState<AppUpdateStatus|null>(null);
+  const checkAppUpdates=async(force=false)=>{
+    if(!bridge?.checkAppUpdates)return;
+    try{setAppUpdate(await bridge.checkAppUpdates(force));}catch{setToast('GrokDeck update check failed. Try again.');}
+  };
+  useEffect(()=>{
+    if(loading||demo||!prefs.checkReleases)return;
+    void checkAppUpdates();
+    const timer=setInterval(()=>void checkAppUpdates(),6*3600000);
+    return ()=>clearInterval(timer);
+  },[loading,demo,prefs.checkReleases]);
+  useEffect(()=>{
+    if(appUpdate?.status!=='downloading'||!bridge?.appUpdateStatus)return;
+    const timer=setInterval(()=>void bridge.appUpdateStatus!().then(setAppUpdate).catch(()=>{}),1000);
+    return ()=>clearInterval(timer);
+  },[appUpdate?.status]);
 
   const transcript = useRef<HTMLDivElement>(null),
     searchInput = useRef<HTMLInputElement>(null),
@@ -658,6 +676,9 @@ function App() {
             </button>
           </div>
         </header>
+        {appUpdate&&['available','downloaded'].includes(appUpdate.status)&&<div className="alert" role="status">
+          <Download size={16}/><span>{appUpdate.message}</span><button className="button" onClick={()=>setSettings(true)}>Review update</button>
+        </div>}
         {(error || data.source.warning) && (
           <div className="alert" role="alert">
             <Bell size={16} />
@@ -1361,7 +1382,21 @@ function App() {
                 </button>
               </div>
               <hr />
-              <h3>Version & compatibility</h3>
+              <h3>GrokDeck updates</h3>
+              <p>Checks use your existing GitHub CLI sign-in or a host-only GrokDeck GitHub token. This private preview can open downloads; in-app installation requires a signed build and published update files.</p>
+              <div className="release-settings">
+                <button className="button" onClick={()=>void checkAppUpdates(true)} disabled={['checking','downloading','installing'].includes(appUpdate?.status||'')}>Check GrokDeck updates</button>
+                <button className="button" onClick={()=>void bridge?.openDownloads?.()}>Open private downloads</button>
+                {appUpdate&&<p role="status">{appUpdate.message}</p>}
+                {appUpdate?.status==='available'&&appUpdate.canInstall&&<button className="button" onClick={async()=>{
+                  setAppUpdate({...appUpdate,status:'downloading',message:'Downloading GrokDeck…'});
+                  try{setAppUpdate(await bridge!.downloadUpdate!());}catch{setToast('Update download failed. Check again.');void checkAppUpdates(true);}
+                }}>Download GrokDeck {appUpdate.version}</button>}
+                {appUpdate?.status==='downloaded'&&<button className="button" disabled={Object.keys(pendingSends).length>0} onClick={async()=>{
+                  try{await saves.current;setAppUpdate(await bridge!.installUpdate!());}catch{setToast('Resolve pending message delivery before restarting.');}
+                }}>Restart and install</button>}
+              </div>
+              <h3>Grok Bot compatibility</h3>
               <div className="version-row">
                 <span>GrokDeck</span>
                 <strong>
@@ -1390,7 +1425,7 @@ function App() {
                     checked={prefs.checkReleases}
                     onChange={(e) => save({ checkReleases: e.target.checked })}
                   />{" "}
-                  Check for Grok Bot releases when the app opens and every six
+                  Check for GrokDeck and Grok Bot releases when the app opens and every six
                   hours
                 </label>
                 <button

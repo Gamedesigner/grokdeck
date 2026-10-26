@@ -44,6 +44,10 @@ export interface ReleaseStatus {
   checkedAt: number;
   message: string;
 }
+export interface AppUpdateStatus {
+  status: 'idle'|'checking'|'current'|'available'|'downloading'|'downloaded'|'installing'|'unavailable';
+  currentVersion:string; version:string|null; checkedAt:number; canInstall:boolean; message:string;
+}
 export interface Preferences {
   checkReleases: boolean;
   theme: "dark" | "light" | "system";
@@ -69,6 +73,11 @@ export interface ComputersResponse {
   computers:{agentId:string;name:string;state:"absent"|"hibernated"|"running"|"unknown";windows:{index:number;label:string}[];checkedAt:number;error?:string}[];
 }
 export interface Bridge {
+  checkAppUpdates?(force?:boolean):Promise<AppUpdateStatus>;
+  appUpdateStatus?():Promise<AppUpdateStatus>;
+  downloadUpdate?():Promise<AppUpdateStatus>;
+  installUpdate?():Promise<AppUpdateStatus>;
+  openDownloads?():Promise<void>;
   getAvatar?(id:string): Promise<string>;
   computers?(): Promise<ComputersResponse>;
   connectLive?(): Promise<Snapshot>;

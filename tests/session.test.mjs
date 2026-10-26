@@ -71,7 +71,7 @@ test('selected team must decrypt to a bounded numeric identifier',async t=>{
   for(const team of ['not-a-team','1'.repeat(33)])await assert.rejects(readSession(await fixture(t,{values:{'cursor-selected-team-id':cipher(team)}})),{code:'invalid-team'});
 });
 
-const auth={token:'local-fixture-token',accountScope:scope,machineId:'fixture-machine',teamId:'123'};
+const auth={appVersion:'0.75.0',token:'local-fixture-token',accountScope:scope,machineId:'fixture-machine',teamId:'123'};
 const discovery={gatewayUrl:'https://fixture.us8.cursorvm.com',gatewayToken:'fixture-gateway-token',gatewayPortToken:'fixture-port-token'};
 function resolver(fetchImpl,extra={}){
   return createConnectionResolver({session:async()=>auth,currentAccountScope:async()=>scope,fetchImpl,...extra});
@@ -128,4 +128,18 @@ test('discovery enforces response size, JSON shape and gateway credential destin
   const portOnly=await resolver(async()=>Response.json({...discovery,gatewayToken:''}))();
   assert.equal(portOnly.token,undefined);
   assert.equal(portOnly.headers['x-anyrun-port-token'],'fixture-port-token');
+});
+
+test('reviewed 0.75.8 preserves session isolation and reports its detected version',async t=>{
+  const f=await fixture(t,{status:{appVersion:'0.75.8'}});
+  assert.equal((await readSession(f)).appVersion,'0.75.8');
+  assert.equal(await currentAccountScope(f.sourcePath),scope);
+});
+test('version changes invalidate discovery cache and use the detected protocol version',async()=>{
+  let version='0.75.0',calls=0;
+  const resolve=resolver(async(_,options)=>{
+    calls++;assert.equal(options.headers['x-cursor-client-version'],version);return Response.json(discovery);
+  },{session:async()=>({...auth,appVersion:version})});
+  await resolve();version='0.75.8';await resolve();assert.equal(calls,2);
+  version='0.75.9';await assert.rejects(resolve(),{code:'unsupported-or-signed-out'});assert.equal(calls,2);
 });

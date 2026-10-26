@@ -66,5 +66,6 @@ jobs:
             release/*.zip
             release/*.exe
             release/*.blockmap
+            release/latest*.yml
           if-no-files-found: error
           retention-days: 14

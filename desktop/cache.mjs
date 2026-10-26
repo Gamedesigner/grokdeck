@@ -2,8 +2,9 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import os from "node:os";
 
+import {VERIFIED_VERSION,compatibilityWarning} from './compatibility.mjs';
 const MAX_BLOB = 24 * 1024 * 1024;
-export const SUPPORTED_VERSION = "0.75.0";
+export const SUPPORTED_VERSION = VERIFIED_VERSION;
 export function defaultSource(
   platform = process.platform,
   home = os.homedir(),
@@ -300,9 +301,7 @@ export async function readCache(root = defaultSource()) {
       version,
       cacheUpdatedAt: latest,
       warning:
-        version && version !== SUPPORTED_VERSION
-          ? `Grok Bot ${version} differs from tested version ${SUPPORTED_VERSION}. Check history and status for compatibility.`
-          : null,
+        version ? compatibilityWarning(version) : null,
     },
     warnings,
   };

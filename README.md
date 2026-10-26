@@ -13,7 +13,7 @@ A standalone desktop workspace for exploring your Grok Bot agents and discussion
 - Check the official stable release feed on launch and every six hours, with a manual check and an option to disable background checks.
 - Explicitly labeled example workspace for exploring the interface without local data.
 
-**Modes:** The default desktop view reads the local cache. An opt-in experimental live bridge now supports current discussions, sending text and replies with emoji, checking delivery, requesting a run interruption, provided bot pictures, and a read-only per-bot computer status list. On the desktop choose **Connect live** after starting `npm run bridge:live`. Replies refresh every two seconds while the discussion is visible. This is version-specific integration verified against Grok Bot 0.75.0, not a documented public API. Approvals, attachments, and richer actions still use Grok Bot. GrokDeck never modifies its cache or installs Grok Bot updates.
+**Modes:** The default desktop view reads the local cache. An opt-in experimental live bridge now supports current discussions, sending text and replies with emoji, checking delivery, requesting a run interruption, provided bot pictures, and a read-only per-bot computer status list. On the desktop choose **Connect live** after starting `npm run bridge:live`. Replies refresh every two seconds while the discussion is visible. This is version-specific integration verified against Grok Bot 0.75.0, with 0.75.8 protocol review and Mac live-read verification, not a documented public API. Approvals, attachments, and richer actions still use Grok Bot. GrokDeck never modifies its cache or installs Grok Bot updates.
 
 ## Run locally
 
@@ -83,3 +83,7 @@ GROKDECK_LAN_HOST=YOUR_MAC_PRIVATE_IPV4 npm run bridge:lan
 ```
 
 Stop the default `npm run bridge` first because both use port 43872. The Mac helper may request Keychain access. It binds its initial account and team; restart it explicitly after switching either in Grok Bot. Do not put tokens into command arguments, source, chat, or Notion. See [connection evidence and limits](docs/live-connection.md) and [iPhone pairing](docs/ios-prototype.md). The live bridge is a developer command, not an automatically enabled service in the desktop installer.
+
+## App updates
+
+GrokDeck 0.2.0 detects its own private GitHub releases as well as Grok Bot releases. Open Settings → GrokDeck updates. Signed installed builds can download and restart to install; today's unsigned previews use manual downloads. [Update setup and limits](docs/app-updates.md) · [Grok Bot 0.75.8 review](docs/compatibility-0.75.8.md).

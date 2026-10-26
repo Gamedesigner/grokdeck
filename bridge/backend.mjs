@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { supportsLiveVersion } from '../desktop/compatibility.mjs';
 import { SessionError } from './session.mjs';
 import { validateGatewayConnection } from './gateway.mjs';
 const BACKEND='https://api2.cursor.sh/aiserver.v1.GrokBotService/EnsureSandBox';
@@ -6,10 +7,11 @@ export function createConnectionResolver({session,currentAccountScope,fetchImpl=
   let cached;
   return async () => {
     const auth=await session();
+    if(!supportsLiveVersion(auth.appVersion))throw new SessionError('unsupported-or-signed-out');
     if(await currentAccountScope()!==auth.accountScope)throw new SessionError('account-changed');
-    if(cached?.accountScope===auth.accountScope && cached.teamId===auth.teamId && Date.now()<cached.until) return cached.connection;
+    if(cached?.accountScope===auth.accountScope && cached.teamId===auth.teamId && cached.appVersion===auth.appVersion && Date.now()<cached.until) return cached.connection;
     const headers={'content-type':'application/json','connect-protocol-version':'1',authorization:`Bearer ${auth.token}`,
-      'user-agent':'GrokDeck/0.1.0','x-cursor-client-type':'sand','x-cursor-client-version':'0.75.0',
+      'user-agent':'GrokDeck/0.2.0','x-cursor-client-type':'sand','x-cursor-client-version':auth.appVersion,
       'x-sand-box-namespace':'prod','x-cursor-client-os':process.platform,'x-ghost-mode':'true','x-request-id':randomUUID()};
     if(auth.teamId)headers['x-cursor-team-id']=auth.teamId;
     const response=await fetchImpl(BACKEND,{method:'POST',headers,body:JSON.stringify({wake:true}),redirect:'error',signal:AbortSignal.timeout(15000)});
@@ -25,14 +27,14 @@ export function createConnectionResolver({session,currentAccountScope,fetchImpl=
     let box;try{box=JSON.parse(raw);}catch{throw new SessionError('invalid-discovery');}
     if(await currentAccountScope()!==auth.accountScope)throw new SessionError('account-changed');
     const latest=await session();
-    if(latest.accountScope!==auth.accountScope||latest.teamId!==auth.teamId)throw new SessionError('account-changed');
+    if(latest.accountScope!==auth.accountScope||latest.teamId!==auth.teamId||latest.appVersion!==auth.appVersion)throw new SessionError('account-changed');
     if(!box||typeof box!=='object'||Array.isArray(box)||typeof box.gatewayUrl!=='string'||!box.gatewayUrl)throw new SessionError('gateway-asleep-or-unavailable');
     if(box.gatewayToken!==undefined&&typeof box.gatewayToken!=='string')throw new SessionError('invalid-discovery');
     const connection={baseUrl:box.gatewayUrl,...box.gatewayToken?{token:box.gatewayToken}:{},headers:{},accountScope:auth.accountScope,teamId:auth.teamId};
     if(box.networkToken)connection.headers['x-anyrun-network-token']=box.networkToken;
     else if(box.gatewayPortToken)connection.headers['x-anyrun-port-token']=box.gatewayPortToken;
     try{validateGatewayConnection(connection);}catch{throw new SessionError('invalid-discovery');}
-    cached={accountScope:auth.accountScope,teamId:auth.teamId,until:Date.now()+60000,connection};
+    cached={appVersion:auth.appVersion,accountScope:auth.accountScope,teamId:auth.teamId,until:Date.now()+60000,connection};
     return connection;
   };
 }
