@@ -19,7 +19,8 @@
     "bridge": "node bridge/server.mjs",
     "bridge:live": "electron bridge/live.cjs",
     "bridge:lan": "node bridge/lan.mjs",
-    "maintenance:check": "node scripts/check-compatibility.mjs"
+    "maintenance:check": "node scripts/check-compatibility.mjs",
+    "package:mac:signed": "node scripts/package-mac-signed.mjs"
   },
   "dependencies": {
     "electron-updater": "6.8.11",

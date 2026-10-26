@@ -10,6 +10,22 @@ Signed installed desktop builds can download through electron-updater and explic
 
 The current previews are unsigned and the private repository has no published stable updater release. These builds show manual downloads instead of offering installation. CI now retains `latest*.yml` alongside installers, ZIPs and blockmaps. Signing/notarization and publishing a stable release with its matching metadata are still required before end-to-end automatic installation can be verified. Never ship a GitHub token in app-update.yml or source. A Windows signed build must include its signing publisher in the generated updater configuration. No release is published automatically by CI.
 
+### Signed Mac packaging
+
+On a Mac with a Developer ID Application identity and a working notarytool
+Keychain profile, set `GROKDECK_SIGNING_IDENTITY` to the certificate name and
+`APPLE_KEYCHAIN_PROFILE` to the profile name, then run `npm run package:mac:signed`.
+Use the full Xcode developer directory through `DEVELOPER_DIR` when needed.
+The command builds both Mac architectures in `release/signed`, requires signing,
+and asks electron-builder to notarize. It never publishes. The ordinary CI
+packaging commands continue producing previews without requiring private keys.
+
+Before release, verify each app with `codesign --verify --deep --strict`,
+`spctl --assess --type execute`, and `xcrun stapler validate`. Smoke-test the
+Apple Silicon app on the Mac mini and the Intel app on a suitable machine.
+Retain ZIPs, DMGs, blockmaps and `latest-mac.yml` together. A successful notarized
+build is a prerequisite, not proof of the private updater's download/restart path.
+
 This updates GrokDeck, not Grok Bot. Newly detected Grok Bot versions are never automatically added to the live-protocol allowlist: an app update must carry an explicitly reviewed adapter. Versions 0.75.0 and 0.75.8 are currently allowed; all other versions fail closed for live requests. Version changes invalidate gateway discovery cache. The bridge reports the detected source version rather than a fixed label.
 
 The iPhone app is not replaced by the desktop updater. Its Mac-hosted bridge receives protocol fixes when the helper is restarted; native iOS app updates still require a device build or a future TestFlight distribution.
