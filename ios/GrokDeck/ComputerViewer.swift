@@ -132,7 +132,7 @@ struct ComputerViewer: View {
       ComputerWebView(model: model).accessibilityIdentifier("computer-screen")
       if model.connected && !expanded {
         HStack {
-          Toggle("Control", isOn: Binding(get: { model.control }, set: model.setControl)).fixedSize()
+          Toggle("Control", isOn: Binding(get: { model.control }, set: { value in model.setControl(value) })).fixedSize()
           Spacer()
           Button("Keyboard", systemImage: "keyboard") { typing = true }.disabled(!model.control)
         }.padding()
