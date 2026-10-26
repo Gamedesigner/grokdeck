@@ -16,9 +16,11 @@ On a Mac with a Developer ID Application identity and a working notarytool
 Keychain profile, set `GROKDECK_SIGNING_IDENTITY` to the certificate name and
 `APPLE_KEYCHAIN_PROFILE` to the profile name, then run `npm run package:mac:signed`.
 Use the full Xcode developer directory through `DEVELOPER_DIR` when needed.
-The command builds both Mac architectures in `release/signed`, requires signing,
+The command builds both Mac architectures in `~/Library/Caches/GrokDeck/signed-release`, requires signing,
 and asks electron-builder to notarize. It never publishes. The ordinary CI
 packaging commands continue producing previews without requiring private keys.
+Signed output stays outside Documents to avoid File Provider metadata that can
+invalidate code signing while a build is running.
 
 Before release, verify each app with `codesign --verify --deep --strict`,
 `spctl --assess --type execute`, and `xcrun stapler validate`. Smoke-test the
