@@ -8,6 +8,7 @@ The native iPhone computer viewer uses the authenticated bridge and a locally bu
 
 - Live remote-desktop handshake and a 1920 × 1200 canvas on the Mac test renderer.
 - Physical iPhone: owner confirmed the desktop appears, touch and typing work, and full-screen landscape fits with Control enabled.
+- Physical iPhone fallback: owner confirmed Open in Grok Bot opens the correct selected agent.
 - Physical iOS build/install/launch; setup uses the owner's existing pairing.
 - 100 Node tests, including viewer route rejection, replay prevention and buffer/lifetime limits.
 - Desktop Electron bridge and UI smoke tests, and seven browser UI tests.

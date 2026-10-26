@@ -113,7 +113,7 @@ Security upgrade 0.2.3 uses an authenticated local TLS connection and a new pair
 
 Open Computers and choose View computer for a running agent. The viewer opens full screen, supports portrait and landscape, and enables touch control on connection. Use the hand button to turn control off; Keyboard types text and provides Return, Tab, and Escape. Leaving the viewer or backgrounding the app disconnects the session.
 
-If a computer is unavailable, choose Open in Grok Bot. This targets the agent; select its computer in Grok Bot. The iOS agent handoff and a direct-to-computer deep link remain unverified. Sleeping computers are not automatically started by GrokDeck.
+If a computer is unavailable, choose Open in Grok Bot. This targets the agent; select its computer in Grok Bot. The selected-agent handoff is verified on iPhone; a direct-to-computer deep link is not. Sleeping computers are not automatically started by GrokDeck.
 
 The helper relays authenticated screen data; upstream computer credentials stay on the desktop. Viewer sessions expire after ten minutes or thirty seconds without activity. Reopen the viewer to reconnect.
 
