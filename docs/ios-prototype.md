@@ -24,7 +24,7 @@ From the repository on the Mac mini:
 npm run bridge
 ```
 
-The server binds **only** to `127.0.0.1:43872`. The first start generates a 256-bit pairing credential in `~/.grokdeck-bridge/pairing-token` with owner-only file permissions on macOS. The value is never logged. Copy it directly into the app's secure pairing field; do not put it in chat, Notion, Git, command arguments, or screenshots.
+The server binds **only** to `https://127.0.0.1:43875`. The first start generates a 256-bit pairing credential in `~/.grokdeck-bridge/pairing-token-v2` with owner-only file permissions on macOS. The value is never logged. Copy it directly into the app's secure pairing field; do not put it in chat, Notion, Git, command arguments, or screenshots.
 
 The iOS app stores a successfully verified pairing key in Keychain with device-only accessibility. Forgetting pairing clears this device's key; it does not rotate the host credential. To rotate the host key, stop the bridge, remove that credential file yourself, and start the bridge again. Re-pair clients afterward.
 
@@ -124,3 +124,5 @@ DEVELOPER_DIR=/Applications/Xcode-27.1.app/Contents/Developer \
 Install the resulting `Debug-iphoneos/GrokDeck.app` with Xcode or `xcrun devicectl device install app --device YOUR_DEVICE_UDID APP_PATH`. USB/developer pairing supports installation and debugging; it does not automatically make the Mac's loopback bridge reachable from an ordinary iOS app.
 
 The desktop preview remains a separate app; the bridge is a development command, not an automatically enabled feature in its installer.
+
+Version 0.2.3 rejects plaintext endpoints, including loopback. Upgrade both the desktop and phone, then create a fresh Phone Setup. The simulator launcher reads the local TLS pin automatically. See [security migration](security-upgrade-0.2.3.md).

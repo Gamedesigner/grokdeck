@@ -31,7 +31,7 @@ app = Path(args.app)
 if not app.is_dir():
     parser.error('Build the signed Debug iPhone app first.')
 configuration = Path.home() / '.grokdeck-bridge'
-credential = configuration / 'pairing-token'
+credential = configuration / 'pairing-token-v2'
 certificate = Path(args.certificate) if args.certificate else configuration / ('tls-' + str(ip)) / 'cert.pem'
 if credential.is_symlink() or not credential.is_file() or not certificate.is_file():
     parser.error('Start the loopback bridge and private HTTPS LAN proxy first.')

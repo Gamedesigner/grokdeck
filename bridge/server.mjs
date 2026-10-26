@@ -1,4 +1,6 @@
 import http from "node:http";
+import https from "node:https";
+import { LOCAL_PORT, protectDirectory, loadLocalIdentity, readPrivateFile } from "./local-tls.mjs";
 import { timingSafeEqual, randomBytes } from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -7,7 +9,7 @@ import { pathToFileURL } from "node:url";
 import { liveRoute } from "./live-routes.mjs";
 import { readCache } from "../desktop/cache.mjs";
 
-export const DEFAULT_PORT = 43872;
+export const DEFAULT_PORT = LOCAL_PORT;
 export function authorized(header, token) {
   if (
     typeof header !== "string" ||
@@ -22,8 +24,8 @@ export function authorized(header, token) {
 export async function loadPairingToken(
   directory = path.join(os.homedir(), ".grokdeck-bridge"),
 ) {
-  await fs.mkdir(directory, { recursive: true, mode: 0o700 });
-  const file = path.join(directory, "pairing-token");
+  await protectDirectory(directory);
+  const file = path.join(directory, "pairing-token-v2");
   try {
     const value = randomBytes(32).toString("base64url");
     await fs.writeFile(file, value, { flag: "wx", mode: 0o600 });
@@ -33,7 +35,7 @@ export async function loadPairingToken(
   const stat = await fs.lstat(file);
   if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 128)
     throw new Error("Invalid pairing credential file");
-  const token = (await fs.readFile(file, "utf8")).trim();
+  const token = (await readPrivateFile(file, 128)).trim();
   if (!/^[A-Za-z0-9_-]{43}$/.test(token))
     throw new Error("Invalid pairing credential");
   if (process.platform !== "win32") await fs.chmod(file, 0o600);
@@ -44,10 +46,11 @@ export function createBridge({
   sourcePath,
   gateway,
   reader = () => readCache(sourcePath),
+  tlsOptions,
 } = {}) {
   if (typeof token !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(token))
     throw new Error("A 256-bit pairing token is required");
-  const server = http.createServer(async (req, res) => {
+  const server = (tlsOptions ? https.createServer.bind(https, { ...tlsOptions, minVersion: "TLSv1.2" }) : http.createServer.bind(http))(async (req, res) => {
     const respond = (status, body) => {
       let raw = JSON.stringify(body);
       if (Buffer.byteLength(raw) > 8 * 1024 * 1024) {
@@ -169,7 +172,8 @@ export async function startBridge({
   if (!Number.isSafeInteger(port) || port < 0 || port > 65535)
     throw new Error("Invalid port");
   const { token, file } = await loadPairingToken(credentialDirectory);
-  const server = createBridge({ token, sourcePath, gateway });
+  const tlsOptions = await loadLocalIdentity(credentialDirectory);
+  const server = createBridge({ token, sourcePath, gateway, tlsOptions });
   await new Promise((resolve, reject) => {
     server.once("error", reject);
     server.listen(port, "127.0.0.1", resolve);
@@ -188,7 +192,7 @@ if (
     credentialDirectory: process.env.GROKDECK_BRIDGE_CONFIG,
   })
     .then(({ server, tokenFile, port }) => {
-      console.log(`GrokDeck read-only bridge: http://127.0.0.1:${port}`);
+      console.log(`GrokDeck read-only bridge: https://127.0.0.1:${port}`);
       console.log(
         `Pairing credential stored locally at ${tokenFile}; its value is never logged.`,
       );

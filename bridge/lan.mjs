@@ -1,5 +1,5 @@
 import https from "node:https";
-import http from "node:http";
+import { readLocalCertificate, localTLSOptions, protectDirectory } from "./local-tls.mjs";
 import { X509Certificate, createHash } from "node:crypto";
 import { promises as fs } from "node:fs";
 import os from "node:os";
@@ -30,7 +30,7 @@ async function regularFile(file) {
 }
 export async function loadLANIdentity(host, directory = path.join(os.homedir(), ".grokdeck-bridge")) {
   if (!privateIPv4(host)) throw new Error("A private IPv4 address is required.");
-  await fs.mkdir(directory, { recursive: true, mode: 0o700 });
+  await protectDirectory(directory);
   const rootInfo = await fs.lstat(directory);
   if (!rootInfo.isDirectory() || rootInfo.isSymbolicLink()) throw new Error("Invalid bridge configuration directory.");
   const root = path.join(directory, `tls-${host}`);
@@ -68,9 +68,10 @@ export async function loadLANIdentity(host, directory = path.join(os.homedir(), 
   const fingerprint = createHash("sha256").update(parsed.raw).digest("hex");
   return { key, cert, fingerprint, keyFile, certFile };
 }
-export function createLANProxy({ host, token, key, cert, upstreamPort = DEFAULT_PORT, onResponse, enrollment }) {
+export function createLANProxy({ host, token, key, cert, upstreamPort = DEFAULT_PORT, onResponse, enrollment, upstreamCert }) {
   if (!privateIPv4(host) || !/^[A-Za-z0-9_-]{43}$/.test(token) || !Number.isInteger(upstreamPort) || upstreamPort < 1 || upstreamPort > 65535)
     throw new Error("Invalid private bridge configuration.");
+  const upstreamTLS = upstreamCert ? localTLSOptions(upstreamCert) : null;
   const server = https.createServer({ key, cert, minVersion: "TLSv1.2" }, (req, res) => {
     res.on("finish", () => onResponse?.({ method: req.method, status: res.statusCode }));
     const reject = (status, error) => {
@@ -99,10 +100,14 @@ export function createLANProxy({ host, token, key, cert, upstreamPort = DEFAULT_
     const chunks = []; let count = 0;
     req.on("data", (chunk) => { count += chunk.length; if (count <= 256 * 1024) chunks.push(chunk); else req.destroy(); });
     req.on("end", () => {
-      const upstream = http.request({ host: "127.0.0.1", port: upstreamPort, method: req.method, path: req.url,
+      if (!upstreamTLS) return reject(503, "Local bridge identity unavailable.");
+      const upstream = https.request({ ...upstreamTLS, host: "127.0.0.1", port: upstreamPort, method: req.method, path: req.url,
         headers: { Host: `127.0.0.1:${upstreamPort}`, Authorization: req.headers.authorization, "Content-Type": "application/json", "Content-Length": count, Connection: "close" }, timeout: req.method === "POST" ? 30000 : 15000 }, (response) => {
         // Only the local bridge's JSON response is forwarded; redirect destinations are never followed.
         res.writeHead(response.statusCode, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", Connection: "close" });
+        let bytes = 0;
+        response.on("data", chunk => { bytes += chunk.length; if (bytes > 8 * 1024 * 1024) { upstream.destroy(); res.destroy(); } });
+        response.on("error", () => res.destroy());
         response.pipe(res);
       });
       upstream.on("timeout", () => upstream.destroy());
@@ -119,7 +124,8 @@ export async function startLANBridge({ host, port = LAN_PORT, upstreamPort = DEF
   if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error("Invalid LAN port.");
   const identity = await loadLANIdentity(host, credentialDirectory);
   const { token, file } = await loadPairingToken(credentialDirectory);
-  const server = createLANProxy({ host, token, ...identity, upstreamPort, onResponse, enrollment });
+  const upstreamCert = await readLocalCertificate(credentialDirectory);
+  const server = createLANProxy({ host, token, ...identity, upstreamPort, onResponse, enrollment, upstreamCert });
   await new Promise((resolve, reject) => { server.once("error", reject); server.listen(port, host, resolve); });
   return { server, endpoint: `https://${host}:${server.address().port}`, fingerprint: identity.fingerprint, tokenFile: file };
 }

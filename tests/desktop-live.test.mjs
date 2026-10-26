@@ -11,7 +11,7 @@ const reply=j=>new Response(JSON.stringify({apiVersion:1,...j}),{headers:{'conte
 test('desktop live transport keeps credentials on fixed loopback requests and returns only data',async t=>{
  let observed;
  const {client}=await fixture(t,async(url,options)=>{observed={url,options};return reply({live:true,readOnly:false});});
- assert.deepEqual(await client.health(),{live:true});assert.equal(observed.url,'http://127.0.0.1:43872/v1/health');assert.equal(observed.options.redirect,'error');assert.equal(observed.options.headers.Authorization,'Bearer '+'a'.repeat(43));
+ assert.deepEqual(await client.health(),{live:true});assert.equal(observed.url,'https://127.0.0.1:43875/v1/health');assert.equal(observed.options.redirect,'error');assert.equal(observed.options.headers.Authorization,'Bearer '+'a'.repeat(43));
  await assert.rejects(client.messages('../secret'));await assert.rejects(client.send('agent','hello','not-a-uuid'));
 });
 test('desktop sends never retry ambiguous or mismatched receipts',async t=>{
@@ -36,14 +36,14 @@ test('desktop preserves Unicode text and validates the optional reply identifier
 
 test('avatar replies become bounded local image data only, never arbitrary URLs or SVG',async t=>{
  const encoded=Buffer.from([137,80,78,71,13,10,26,10,0]).toString('base64');
- const {client}=await fixture(t,async url=>{assert.equal(url,'http://127.0.0.1:43872/v1/agents/agent/avatar');return reply({mimeType:'image/png',dataBase64:encoded});});
+ const {client}=await fixture(t,async url=>{assert.equal(url,'https://127.0.0.1:43875/v1/agents/agent/avatar');return reply({mimeType:'image/png',dataBase64:encoded});});
  assert.equal(await client.avatar('agent'),'data:image/png;base64,'+encoded);
  const svg=await fixture(t,async()=>reply({mimeType:'image/svg+xml',dataBase64:Buffer.from('<svg/>').toString('base64')}));await assert.rejects(svg.client.avatar('agent'));
  const corrupt=await fixture(t,async()=>reply({mimeType:'image/png',dataBase64:Buffer.from('<html/>').toString('base64')}));await assert.rejects(corrupt.client.avatar('agent'));
 });
 test('computer status is fetched read-only and unsupported states are rejected',async t=>{
  const computer={agentId:'agent',name:'Computer',state:'running',windows:[{index:0,label:'Desktop'}],checkedAt:1};
- const {client}=await fixture(t,async(url,options)=>{assert.equal(url,'http://127.0.0.1:43872/v1/computers');assert.equal(options.method,'GET');assert.equal(options.body,undefined);return reply({checkedAt:1,complete:true,computers:[computer]});});
+ const {client}=await fixture(t,async(url,options)=>{assert.equal(url,'https://127.0.0.1:43875/v1/computers');assert.equal(options.method,'GET');assert.equal(options.body,undefined);return reply({checkedAt:1,complete:true,computers:[computer]});});
  assert.equal((await client.computers()).computers[0].state,'running');
  const invalid=await fixture(t,async()=>reply({checkedAt:1,complete:true,computers:[{...computer,state:'starting'}]}));await assert.rejects(invalid.client.computers());
 });

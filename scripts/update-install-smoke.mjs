@@ -1,6 +1,6 @@
 // Opt-in real updater integration test. Uses a disposable signed app copy and
 // profile; never mocks the release API, updater, signature checks, or installer.
-import {_electron as electron} from 'playwright';
+import {launchHardened} from './hardened-launch.mjs';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -22,7 +22,7 @@ await run('/usr/bin/codesign',['--verify','--deep','--strict',appPath]);
 await fs.mkdir(profile);await fs.mkdir(source);
 const draft='Preserve this local draft across the real update';
 await fs.writeFile(path.join(profile,'preferences.json'),JSON.stringify({checkReleases:false,sourcePath:source,drafts:{'update-test':draft}}));
-const launch=()=>electron.launch({executablePath,args:[`--user-data-dir=${profile}`],env:{...process.env,GROKDECK_DEV_URL:'',GROKDECK_SCREENSHOT:''},timeout:60000});
+const launch=()=>launchHardened(executablePath,profile);
 let desktop;
 try {
   desktop=await launch();

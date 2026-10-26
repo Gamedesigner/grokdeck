@@ -12,19 +12,22 @@ from urllib.parse import urlparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--device', required=True, help='Dedicated GrokDeck simulator UUID')
 parser.add_argument('--app', default=str(Path.home() / 'Library/Developer/Xcode/DerivedData/GrokDeckPrototype/Build/Products/Debug-iphonesimulator/GrokDeck.app'))
-parser.add_argument('--url', default='http://127.0.0.1:43872')
+parser.add_argument('--url', default='https://127.0.0.1:43875')
 parser.add_argument('--certificate', help='Local PEM leaf certificate for a pinned HTTPS bridge')
 parser.add_argument('--rejected-key', action='store_true', help='Check the authentication-error UI using an invalid key')
 args = parser.parse_args()
 app = Path(args.app)
 if not app.is_dir():
     parser.error('Build the Debug simulator app first.')
-token_file = Path.home() / '.grokdeck-bridge' / 'pairing-token'
+token_file = Path.home() / '.grokdeck-bridge' / 'pairing-token-v2'
 if not token_file.is_file():
     parser.error('Start npm run bridge first. Do not paste a pairing key into chat or command arguments.')
 environment = os.environ.copy()
 environment['SIMCTL_CHILD_GROKDECK_BRIDGE_URL'] = args.url
 environment['SIMCTL_CHILD_GROKDECK_BRIDGE_TOKEN'] = ('B' * 43) if args.rejected_key else token_file.read_text().strip()
+if not args.certificate and args.url == 'https://127.0.0.1:43875':
+    identity = json.loads((token_file.parent / 'local-tls-v2.json').read_text())
+    environment['SIMCTL_CHILD_GROKDECK_BRIDGE_CERT_SHA256'] = hashlib.sha256(ssl.PEM_cert_to_DER_cert(identity['cert'])).hexdigest()
 if args.certificate:
     if urlparse(args.url).scheme != 'https':
         parser.error('Certificate pinning requires an HTTPS bridge URL.')

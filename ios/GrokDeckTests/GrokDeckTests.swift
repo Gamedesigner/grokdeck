@@ -16,7 +16,8 @@ final class GrokDeckTests: XCTestCase {
   }
 
   func testPrivatePairingEndpointPolicy() throws {
-    XCTAssertEqual(try BridgeAddress.validate("http://127.0.0.1:43872").host, "127.0.0.1")
+    XCTAssertEqual(try BridgeAddress.validate("https://127.0.0.1:43875").host, "127.0.0.1")
+    XCTAssertThrowsError(try BridgeAddress.validate("http://127.0.0.1:43872"))
     XCTAssertNoThrow(try BridgeAddress.validate("https://mini.example.ts.net"))
     for address in [
       "http://192.168.1.2:43872", "http://example.com", "file:///tmp/cache",

@@ -7,7 +7,7 @@ import path from 'node:path';
 const identity=process.env.GROKDECK_SIGNING_IDENTITY;
 // Documents can be File Provider managed; Finder metadata added during signing
 // makes otherwise valid Electron helpers fail codesign's resource-fork check.
-const output=path.join(os.homedir(),'Library','Caches','GrokDeck','signed-release');
+const output=process.env.GROKDECK_SIGNED_OUTPUT || path.join(os.homedir(),'Library','Caches','GrokDeck','signed-release');
 if(process.platform!=='darwin'||!identity?.startsWith('Developer ID Application: ')||!process.env.APPLE_KEYCHAIN_PROFILE) {
   console.error('Signed packaging requires macOS, GROKDECK_SIGNING_IDENTITY (Developer ID Application), and APPLE_KEYCHAIN_PROFILE.');
   process.exit(1);
