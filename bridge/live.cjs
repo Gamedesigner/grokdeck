@@ -9,7 +9,11 @@ app.whenReady().then(async()=>{
  const {createConnectionResolver}=await import('./backend.mjs');
  const {createGateway}=await import('./gateway.mjs');
  const {startBridge}=await import('./server.mjs');
- const session=()=>readSession({decrypt:async b=>(await safeStorage.decryptStringAsync(b)).result});
+ const {defaultSource}=await import('../desktop/cache.mjs');
+ const decrypt=process.platform==='win32'
+   ? (await import('./windows-storage.mjs')).createWindowsDecryptor({sourcePath:defaultSource()})
+   : async b=>(await safeStorage.decryptStringAsync(b)).result;
+ const session=()=>readSession({decrypt});
  const {accountScope:initialScope,teamId:initialTeam}=await session();
  const guardedScope=async()=>{const scope=await currentAccountScope();if(scope!==initialScope)throw new Error('account-changed');return scope;};
  const guardedSession=async()=>{const value=await session();if(value.accountScope!==initialScope||value.teamId!==initialTeam)throw new Error('account-changed');return value;};
@@ -23,6 +27,6 @@ app.whenReady().then(async()=>{
  for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>server.close(()=>app.quit()));
  app.on('before-quit',()=>server.close());
 }).catch(error=>{
- console.error(`Live bridge could not start (${error.code||'unavailable'}). Check the signed-in Grok Bot app and Keychain access.`);
+ console.error(`Live bridge could not start (${error.code||'unavailable'}). Check the signed-in Grok Bot app and OS secure-storage access.`);
  app.exit(1);
 });

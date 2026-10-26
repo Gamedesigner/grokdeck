@@ -8,7 +8,7 @@ export class SessionError extends Error {
   constructor(code) { super(code); this.name='SessionError'; this.code=code; }
 }
 const record = value => value !== null && typeof value === 'object' && !Array.isArray(value);
-async function readJSONFile(file, maxSize) {
+export async function readJSONFile(file, maxSize) {
   const info=await fs.lstat(file);
   if(!info.isFile()||info.isSymbolicLink())throw new SessionError('session-unavailable');
   const handle=await fs.open(file, constants.O_RDONLY | (constants.O_NOFOLLOW || 0));

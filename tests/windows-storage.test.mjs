@@ -1,0 +1,25 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {promises as fs} from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {randomBytes,createCipheriv} from 'node:crypto';
+import {createWindowsDecryptor} from '../bridge/windows-storage.mjs';
+test('Windows profile key decrypts authenticated records, rotates, and never modifies the vendor profile',async t=>{
+  const sourcePath=await fs.mkdtemp(path.join(os.tmpdir(),'grokdeck-win-storage-'));
+  t.after(()=>fs.rm(sourcePath,{recursive:true,force:true}));
+  const file=path.join(sourcePath,'Local State');let key=randomBytes(32),calls=0;
+  const write=async label=>fs.writeFile(file,JSON.stringify({os_crypt:{encrypted_key:Buffer.from('DPAPI'+label).toString('base64')},unrelated:'preserve'}));
+  await write('fixture');const before=await fs.readFile(file,'utf8');
+  const decrypt=createWindowsDecryptor({sourcePath,unprotect:async()=>{calls++;return Buffer.from(key);}});
+  const seal=text=>{const nonce=randomBytes(12),cipher=createCipheriv('aes-256-gcm',key,nonce);return Buffer.concat([Buffer.from('v10'),nonce,cipher.update(text),cipher.final(),cipher.getAuthTag()]);};
+  const encrypted=seal('fixture session 🔒');
+  assert.equal(await decrypt(encrypted),'fixture session 🔒');assert.equal(await decrypt(encrypted),'fixture session 🔒');assert.equal(calls,1);
+  const bad=Buffer.from(encrypted);bad[bad.length-1]^=1;await assert.rejects(decrypt(bad));
+  const wrong=Buffer.from(encrypted);wrong.write('v20');await assert.rejects(decrypt(wrong));
+  assert.equal(await fs.readFile(file,'utf8'),before);
+  key=randomBytes(32);await write('rotated');assert.equal(await decrypt(seal('new session')),'new session');assert.equal(calls,2);
+  await assert.rejects(decrypt(encrypted));
+  await fs.writeFile(file,JSON.stringify({os_crypt:{encrypted_key:Buffer.from('UNKNOWN').toString('base64')}}));
+  await assert.rejects(decrypt(encrypted));
+});

@@ -50,6 +50,9 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm run test:desktop
+      - name: Verify Windows separate-profile secure storage
+        if: runner.os == 'Windows'
+        run: node scripts/windows-storage-smoke.mjs
       - run: npm run ${{ matrix.command }}
       - name: Smoke test packaged app on Windows
         if: runner.os == 'Windows'
