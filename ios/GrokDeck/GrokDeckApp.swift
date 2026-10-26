@@ -253,7 +253,7 @@ struct ConnectionView: View {
           Text("Manual connection")
         } footer: {
           Text(
-              "For private Wi-Fi, enter the HTTPS address and certificate SHA-256 shown by your Mac’s LAN bridge. Leave the fingerprint empty only for a normally trusted HTTPS server or simulator loopback. Pairing keys stay in this device’s Keychain."
+              "For private Wi-Fi, enter the HTTPS address and certificate SHA-256 shown by your Mac’s LAN bridge. Leave the fingerprint empty only for a normally trusted HTTPS server. Pairing keys stay in this device’s Keychain."
           )
         }
         if let error = store.error { Section { Text(error).foregroundStyle(.orange) } }

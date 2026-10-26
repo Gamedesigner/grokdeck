@@ -8,7 +8,7 @@ import {X509Certificate,createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
 import {loadLocalIdentity} from '../bridge/local-tls.mjs';
 const root=await fs.mkdtemp(path.join(os.tmpdir(),'deck-ios-limit-'));
-function run(command,args){return new Promise((resolve,reject)=>{const child=spawn(command,args,{env:{...process.env,DEVELOPER_DIR:'/Applications/Xcode-27.1.app/Contents/Developer'}});let out='';child.stdout.on('data',d=>out+=d);child.stderr.on('data',d=>out+=d);child.on('error',reject);child.on('exit',code=>code===0?resolve(out):reject(new Error(out)));});}
+function run(command,args){return new Promise((resolve,reject)=>{const child=spawn(command,args,{env:process.env});let out='';child.stdout.on('data',d=>out+=d);child.stderr.on('data',d=>out+=d);child.on('error',reject);child.on('exit',code=>code===0?resolve(out):reject(new Error(out)));});}
 try {
   const identity=await loadLocalIdentity(root),pin=createHash('sha256').update(new X509Certificate(identity.cert).raw).digest('hex');
   const swift=path.join(root,'Probe.swift'),exe=path.join(root,'probe');
