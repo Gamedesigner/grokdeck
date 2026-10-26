@@ -14,6 +14,6 @@ test('update availability is visible and unsigned previews offer manual download
   await page.goto('/');await page.getByRole('button',{name:'Review update'}).click();
   await expect(page.getByRole('heading',{name:'GrokDeck updates'})).toBeVisible();
   await expect(page.getByRole('button',{name:/Restart and install|Download GrokDeck/})).toHaveCount(0);
-  await page.getByRole('button',{name:'Open private downloads'}).click();
+  await page.getByRole('button',{name:'Open downloads'}).click();
   expect(await page.evaluate(()=>(window as any).__downloadsOpened)).toBe(1);
 });

@@ -1,5 +1,7 @@
 # Agent computers on iOS
 
+Update: implemented in 0.2.5; the owner confirmed physical iPhone viewing, touch, typing, and landscape full-screen control. See [release evidence](release-0.2.5.md). The findings below record the initial investigation.
+
 ## Evidence
 
 Read-only static inspection of the installed Grok Bot 0.75.8 package confirms a noVNC web viewer (`vnc.html`, RFB connection and keyboard handling). The desktop viewer seeds authentication from `port_token` or `network_token` URL parameters and adds corresponding headers to requests in its isolated viewer session, including WebSocket traffic. It also handles wake-related headers, reconnects, input enablement and clipboard integration. A simple WKWebView navigation is therefore not established as sufficient.

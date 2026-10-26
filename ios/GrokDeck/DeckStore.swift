@@ -22,6 +22,7 @@ import SwiftUI
   @Published private(set) var computersCheckedAt: Date?
   @Published private(set) var computersError: String?
   var isLive: Bool { source?.kind == "live-gateway" }
+  var viewerClient: BridgeClient? { isLive && liveEnabled ? client : nil }
   private var client: BridgeClient?
   private var generation = 0
   private var pendingDevelopmentPairing = false
