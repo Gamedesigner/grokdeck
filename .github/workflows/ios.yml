@@ -32,6 +32,8 @@ jobs:
           node-version: "24"
       - run: npm ci
       - run: npm test
+      - name: Verify native Swift TLS and streaming limits
+        run: node scripts/test-ios-response-limit.mjs
       - name: Ensure XcodeGen
         run: command -v xcodegen || brew install xcodegen
       - run: cd ios && xcodegen generate
