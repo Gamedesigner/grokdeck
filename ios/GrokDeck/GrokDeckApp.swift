@@ -357,6 +357,8 @@ struct DiscussionView: View {
     .scrollContentBackground(.hidden)
     .scrollDismissesKeyboard(.interactively)
     .background(Color(uiColor: .systemBackground))
+    .contentShape(Rectangle())
+    .onTapGesture { composerFocused = false }
     .onChange(of: messages.last?.id) { _, latest in
       guard latest != nil, !didScrollToLatest else { return }
       didScrollToLatest = true
