@@ -19,6 +19,7 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npx playwright install --with-deps chromium
+        timeout-minutes: 10
       - run: npm run test:ui
       - uses: actions/upload-artifact@v4
         if: failure()
@@ -26,7 +27,6 @@ jobs:
           name: ui-test-results
           path: test-results
   package:
-    needs: test
     strategy:
       fail-fast: false
       matrix:
