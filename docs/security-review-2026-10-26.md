@@ -1,5 +1,7 @@
 # GrokDeck security review — October 26, 2026
 
+The findings below describe 0.2.2. The implemented fixes and 0.2.3 validation are recorded in [the security upgrade report](security-upgrade-0.2.3.md).
+
 ## Result
 
 **Do not treat this release as security-cleared for public distribution.** One
