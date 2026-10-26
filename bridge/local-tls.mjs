@@ -19,7 +19,7 @@ export async function protectDirectory(directory = credentialDirectory) {
     const script = [
       "$ErrorActionPreference='Stop'; $p=$env:GROKDECK_ACL_DIRECTORY",
       "$sid=[System.Security.Principal.WindowsIdentity]::GetCurrent().User",
-      "$check=@($p); foreach($name in @('local-tls-v2.json','pairing-token-v2')) { $f=[System.IO.Path]::Combine($p,$name); if([System.IO.File]::Exists($f)) { $check+=$f } }",
+      "$check=@($p); foreach($name in @('local-tls-v3.json','pairing-token-v2')) { $f=[System.IO.Path]::Combine($p,$name); if([System.IO.File]::Exists($f)) { $check+=$f } }",
       "foreach($f in $check) { $before=if([System.IO.Directory]::Exists($f)){[System.IO.Directory]::GetAccessControl($f)}else{[System.IO.File]::GetAccessControl($f)}; if(@($sid.Value,'S-1-5-32-544','S-1-5-18') -notcontains $before.GetOwner([System.Security.Principal.SecurityIdentifier]).Value) { throw 'Foreign bridge credential owner' } }",
       "$acl=[System.Security.AccessControl.DirectorySecurity]::new(); $acl.SetOwner($sid); $acl.SetAccessRuleProtection($true,$false)",
       "$rule=[System.Security.AccessControl.FileSystemAccessRule]::new($sid,'FullControl','ContainerInherit,ObjectInherit','None','Allow'); $acl.AddAccessRule($rule)",
@@ -43,14 +43,17 @@ export async function readPrivateFile(file, maxBytes = 32768) {
     return await handle.readFile('utf8');
   } finally { await handle.close(); }
 }
+// Electron uses a stricter TLS verifier than standalone Node. This self-signed
+// trust anchor has CA constraints, but is trusted only for this connection and
+// the peer must still match its exact fingerprint. It is never installed system-wide.
 export async function loadLocalIdentity(directory = credentialDirectory) {
   await protectDirectory(directory);
-  const file = path.join(directory, 'local-tls-v2.json');
+  const file = path.join(directory, 'local-tls-v3.json');
   try { await fs.lstat(file); } catch (error) {
     if (error.code !== 'ENOENT') throw error;
     const pems = await selfsigned.generate([{name:'commonName',value:'GrokDeck local bridge'}], {
       keyType:'rsa',keySize:2048,algorithm:'sha256',notBeforeDate:new Date(Date.now()-60000),notAfterDate:new Date(Date.now()+365*86400000),
-      extensions:[{name:'basicConstraints',cA:false,critical:true},{name:'keyUsage',digitalSignature:true,keyEncipherment:true,critical:true},{name:'extKeyUsage',serverAuth:true},{name:'subjectAltName',altNames:[{type:7,ip:'127.0.0.1'}]}]
+      extensions:[{name:'basicConstraints',cA:true,pathLenConstraint:0,critical:true},{name:'keyUsage',digitalSignature:true,keyEncipherment:true,keyCertSign:true,critical:true},{name:'extKeyUsage',serverAuth:true},{name:'subjectAltName',altNames:[{type:7,ip:'127.0.0.1'}]}]
     });
     // Exclusive creation never replaces an established pin. Partial files fail closed.
     await fs.writeFile(file, JSON.stringify({key:pems.private,cert:pems.cert}), {flag:'wx',mode:0o600}).catch(error=>{if(error.code!=='EEXIST')throw error;});
@@ -60,7 +63,7 @@ export async function loadLocalIdentity(directory = credentialDirectory) {
   return identity;
 }
 export async function readLocalCertificate(directory = credentialDirectory) {
-  return JSON.parse(await readPrivateFile(path.join(directory, 'local-tls-v2.json'))).cert;
+  return JSON.parse(await readPrivateFile(path.join(directory, 'local-tls-v3.json'))).cert;
 }
 export function localTLSOptions(cert) {
   const parsed = new X509Certificate(cert);

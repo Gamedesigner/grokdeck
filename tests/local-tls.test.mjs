@@ -45,7 +45,7 @@ test('same CA trust does not allow a different pinned leaf',async t=>{
   assert.ok(localTLSOptions(identity.cert).checkServerIdentity('127.0.0.1',{subjectaltname:'IP Address:127.0.0.1',fingerprint256:parsed.fingerprint256}));
 });
 test('local identity fails closed on symlink or unsafe directory', {skip:process.platform==='win32'},async t=>{
-  const dir=await directory(t);await loadLocalIdentity(dir);await fs.unlink(path.join(dir,'local-tls-v2.json'));await fs.symlink('/dev/null',path.join(dir,'local-tls-v2.json'));
+  const dir=await directory(t);await loadLocalIdentity(dir);await fs.unlink(path.join(dir,'local-tls-v3.json'));await fs.symlink('/dev/null',path.join(dir,'local-tls-v3.json'));
   await assert.rejects(loadLocalIdentity(dir));const link=dir+'-link';await fs.symlink(dir,link);t.after(()=>fs.unlink(link));await assert.rejects(loadLocalIdentity(link));
 });
 

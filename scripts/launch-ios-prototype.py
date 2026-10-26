@@ -26,7 +26,7 @@ environment = os.environ.copy()
 environment['SIMCTL_CHILD_GROKDECK_BRIDGE_URL'] = args.url
 environment['SIMCTL_CHILD_GROKDECK_BRIDGE_TOKEN'] = ('B' * 43) if args.rejected_key else token_file.read_text().strip()
 if not args.certificate and args.url == 'https://127.0.0.1:43875':
-    identity = json.loads((token_file.parent / 'local-tls-v2.json').read_text())
+    identity = json.loads((token_file.parent / 'local-tls-v3.json').read_text())
     environment['SIMCTL_CHILD_GROKDECK_BRIDGE_CERT_SHA256'] = hashlib.sha256(ssl.PEM_cert_to_DER_cert(identity['cert'])).hexdigest()
 if args.certificate:
     if urlparse(args.url).scheme != 'https':
