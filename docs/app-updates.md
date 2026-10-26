@@ -13,3 +13,7 @@ The current previews are unsigned and the private repository has no published st
 This updates GrokDeck, not Grok Bot. Newly detected Grok Bot versions are never automatically added to the live-protocol allowlist: an app update must carry an explicitly reviewed adapter. Versions 0.75.0 and 0.75.8 are currently allowed; all other versions fail closed for live requests. Version changes invalidate gateway discovery cache. The bridge reports the detected source version rather than a fixed label.
 
 The iPhone app is not replaced by the desktop updater. Its Mac-hosted bridge receives protocol fixes when the helper is restarted; native iOS app updates still require a device build or a future TestFlight distribution.
+
+## Packaged bridge lifecycle
+
+From 0.2.1, Connect live can launch the bridge bundled in the desktop installer. The helper uses the same app executable with a fixed internal mode; the renderer cannot provide executable paths, arguments or environment. Concurrent Connect requests coalesce, startup times out, and startup failures clean up owned children. Existing independent bridges are reused without taking ownership. The desktop app stops only its own helper on quit. LAN hosting and iPhone pairing remain explicit separate setup at this stage.

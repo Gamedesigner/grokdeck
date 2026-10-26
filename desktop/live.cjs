@@ -6,12 +6,12 @@ const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function validId(id){if(typeof id!=='string'||!ID.test(id))throw new Error('Invalid agent');return id;}
 function validNonce(nonce){if(typeof nonce!=='string'||!UUID.test(nonce))throw new Error('Invalid message identifier');return nonce;}
 function createLiveClient({fetchImpl=fetch,credentialFile=path.join(os.homedir(),'.grokdeck-bridge','pairing-token')}={}){
- async function request(route,body){
+ async function request(route,body,timeout=20000){
   const info=await fs.lstat(credentialFile);
   if(!info.isFile()||info.isSymbolicLink()||info.size>128)throw new Error('Pairing unavailable');
   const token=(await fs.readFile(credentialFile,'utf8')).trim();
   if(!/^[A-Za-z0-9_-]{43}$/.test(token))throw new Error('Pairing unavailable');
-  const response=await fetchImpl('http://127.0.0.1:43872/v1/'+route,{method:body===undefined?'GET':'POST',headers:{Authorization:'Bearer '+token,'content-type':'application/json'},...(body===undefined?{}:{body:JSON.stringify(body)}),redirect:'error',signal:AbortSignal.timeout(20000)});
+  const response=await fetchImpl('http://127.0.0.1:43872/v1/'+route,{method:body===undefined?'GET':'POST',headers:{Authorization:'Bearer '+token,'content-type':'application/json'},...(body===undefined?{}:{body:JSON.stringify(body)}),redirect:'error',signal:AbortSignal.timeout(timeout)});
   if(!response.ok||response.redirected)throw new Error('Live bridge unavailable');
   const reader=response.body?.getReader();if(!reader)throw new Error('Invalid bridge reply');
   let bytes=0;const chunks=[];
@@ -21,7 +21,7 @@ function createLiveClient({fetchImpl=fetch,credentialFile=path.join(os.homedir()
  }
  function receipt(reply,nonce){if(reply.clientNonce!==nonce||!['accepted','rejected','unknown','pending'].includes(reply.status)||![true,false,null].includes(reply.accepted))throw new Error('Invalid send receipt');return reply;}
  return {
-  async health(){const reply=await request('health');if(reply.live!==true||reply.readOnly!==false)throw new Error('Live bridge is not enabled');return {live:true};},
+  async health(){const reply=await request('health',undefined,2000);if(reply.live!==true||reply.readOnly!==false)throw new Error('Live bridge is not enabled');return {live:true};},
   async avatar(id){
     const reply=await request(`agents/${validId(id)}/avatar`);
     const mime=reply.mimeType,encoded=reply.dataBase64;

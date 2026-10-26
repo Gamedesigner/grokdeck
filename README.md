@@ -2,7 +2,7 @@
 
 A standalone desktop workspace for exploring your Grok Bot agents and discussions. Built with Electron, React, and TypeScript for macOS and Windows.
 
-## Version 0.1
+## Current preview
 
 - Reads the **real local Grok Bot cache**: agents, sections, unread markers, and cached conversation history.
 - Search names, results, and discussion text; reopen conversations through Grok Bot's agent deep link.
@@ -13,7 +13,13 @@ A standalone desktop workspace for exploring your Grok Bot agents and discussion
 - Check the official stable release feed on launch and every six hours, with a manual check and an option to disable background checks.
 - Explicitly labeled example workspace for exploring the interface without local data.
 
-**Modes:** The default desktop view reads the local cache. An opt-in experimental live bridge now supports current discussions, sending text and replies with emoji, checking delivery, requesting a run interruption, provided bot pictures, and a read-only per-bot computer status list. On the desktop choose **Connect live** after starting `npm run bridge:live`. Replies refresh every two seconds while the discussion is visible. This is version-specific integration verified against Grok Bot 0.75.0, with 0.75.8 protocol review and Mac live-read verification, not a documented public API. Approvals, attachments, and richer actions still use Grok Bot. GrokDeck never modifies its cache or installs Grok Bot updates.
+**Modes:** The default desktop view reads the local cache. An opt-in experimental live bridge now supports current discussions, sending text and replies with emoji, checking delivery, requesting a run interruption, provided bot pictures, and a read-only per-bot computer status list. On the desktop choose **Connect live**; the installed app starts its bundled local bridge when needed. Replies refresh every two seconds while the discussion is visible. This is version-specific integration verified against Grok Bot 0.75.0, with 0.75.8 protocol review and Mac live-read verification, not a documented public API. Approvals, attachments, and richer actions still use Grok Bot. GrokDeck never modifies its cache or installs Grok Bot updates.
+
+## Use the private preview
+
+Install the latest Mac or Windows artifact from this repository's Actions build. Open Grok Bot and sign in, then launch GrokDeck and choose **Connect live**. The desktop installer includes the bridge; no Node.js checkout or terminal command is needed. Allow OS secure-storage access if prompted. Keep GrokDeck open while using a bridge it started. Independently started development bridges are reused and are not stopped when GrokDeck quits.
+
+The repository remains private. Public release, signed automatic installation and broadly available iPhone distribution are still being prepared. The current iPhone build connects through a paired Mac-hosted private HTTPS bridge; it cannot read another iOS app's private data.
 
 ## Run locally
 

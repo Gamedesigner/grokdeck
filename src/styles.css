@@ -1773,3 +1773,18 @@ select {
 .computer-row > div { min-width:0; flex:1; }
 .computer-row p { margin:5px 0; font-size:12px; color:var(--muted); }
 .computer-state { display:block; color:var(--muted); font-size:12px; margin-top:5px; }
+
+.designer-credit {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+  text-decoration: none;
+}
+.designer-credit:hover, .designer-credit:focus-visible {
+  color: var(--text);
+  text-decoration: underline;
+}

@@ -73,6 +73,7 @@ export interface ComputersResponse {
   computers:{agentId:string;name:string;state:"absent"|"hibernated"|"running"|"unknown";windows:{index:number;label:string}[];checkedAt:number;error?:string}[];
 }
 export interface Bridge {
+  openDesigner?():Promise<void>;
   checkAppUpdates?(force?:boolean):Promise<AppUpdateStatus>;
   appUpdateStatus?():Promise<AppUpdateStatus>;
   downloadUpdate?():Promise<AppUpdateStatus>;

@@ -33,7 +33,7 @@ The shipped main-core bundle defines the update base URL `https://api2.cursor.sh
 
 ## Distribution
 
-Electron Builder packages renderer output and the desktop bridge/adapter only. GitHub Actions tests first, then builds separate macOS and Windows artifacts. Installation bundles are initially unsigned; signing and notarization are separate release gates. The packaged desktop app does not start a network server. Separately launched developer bridge commands provide authenticated loopback access and optional pinned HTTPS on one explicit RFC1918 address. No cloud relay or public listener is created.
+Electron Builder packages renderer output and the desktop bridge/adapter only. GitHub Actions tests first, then builds separate macOS and Windows artifacts. Installation bundles are initially unsigned; signing and notarization are separate release gates. Connect live starts a bundled rendererless helper on authenticated loopback when no existing live bridge is available. Quitting the desktop app stops only the helper it started; it never stops an independently running bridge. Separately launched developer bridge commands provide authenticated loopback access and optional pinned HTTPS on one explicit RFC1918 address. No cloud relay or public listener is created.
 
 ## Experimental live connection
 
