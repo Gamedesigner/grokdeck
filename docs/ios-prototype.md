@@ -1,5 +1,16 @@
 # iOS connection prototype
 
+## Distribution preparation
+
+The 0.2.2 build 2 release archive and App Store Connect distribution export
+succeeded locally. The archived app has the expected version/build, compiled
+opaque app icons, and all four iPad orientations. This verifies packaging only:
+the package has not been uploaded to App Store Connect, processed by TestFlight,
+or released. The current installed phone build is still the earlier developer
+build. Local release outputs are outside Documents, under
+`~/Library/Developer/Xcode/Archives/GrokDeck-0.2.2.xcarchive` and
+`~/Library/Caches/GrokDeck/ios-distribution-0.2.2`.
+
 Project record: [GrokDeck — Project & Build Log](https://app.notion.com/p/404d9d2a6a048108b540e65f5c033920).
 
 This is a native SwiftUI iPhone/iPad prototype, targeting iOS 18 or later. It connects through a separate, authenticated Mac bridge. The default bridge reads the desktop cache; an experimental live bridge enables recent discussion reads, messaging and interruption. The iOS app does not read another app's sandbox or hold Grok Bot backend credentials.
