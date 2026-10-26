@@ -1,6 +1,6 @@
 {
   "name": "grokdeck",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "description": "A personal command deck for your Grok Bot conversations",
   "author": "Gamedesigner",

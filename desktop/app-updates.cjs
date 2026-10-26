@@ -32,7 +32,7 @@ function createAppUpdates({currentVersion,updater,tokenProvider=repositoryToken,
   let state={status:'idle',currentVersion,version:null,checkedAt:0,canInstall:false,message:'GrokDeck updates have not been checked.'};
   let pending=null;
   const set=(patch)=>(state={...state,...patch});
-  const fail=()=>set({status:'unavailable',canInstall:false,message:'Could not check or prepare the private GrokDeck update. Check GitHub access and try again; manual downloads remain available.'});
+  const fail=()=>set({status:'unavailable',canInstall:false,message:'Could not check or prepare the GrokDeck update. Check GitHub access and try again; manual downloads remain available.'});
   updater.autoDownload=false;updater.autoInstallOnAppQuit=false;updater.allowDowngrade=false;
   updater.allowPrerelease=false;updater.disableWebInstaller=true;updater.logger=null;
   updater.on('error',()=>fail());
@@ -46,10 +46,11 @@ function createAppUpdates({currentVersion,updater,tokenProvider=repositoryToken,
       set({status:'checking',checkedAt:now(),version:null,canInstall:false,message:'Checking GrokDeck releases…'});
       try {
         const token=await tokenProvider();
-        if(!token)return set({status:'unavailable',message:'Private updates need GitHub access. Sign in with GitHub CLI (gh auth login), or open downloads in your browser.'});
         const response=await fetcher('https://api.github.com/repos/Gamedesigner/grokdeck/releases/latest',{
-          headers:{Authorization:`Bearer ${token}`,Accept:'application/vnd.github+json'},redirect:'error',signal:AbortSignal.timeout(12000)});
-        if(response.status===404)return set({status:'unavailable',message:'No published GrokDeck release is accessible yet. Preview builds are installed manually.'});
+          headers:{...(token?{Authorization:`Bearer ${token}`} : {}),Accept:'application/vnd.github+json'},redirect:'error',signal:AbortSignal.timeout(12000)});
+        if(response.status===404)return set({status:'unavailable',message:token
+          ?'No published GrokDeck release is accessible yet. Preview builds are installed manually.'
+          :'No public GrokDeck release is accessible. Private previews need GitHub CLI sign-in (gh auth login) or manual downloads.'});
         if(!response.ok)throw new Error('release-unavailable');
         const raw=await response.text();if(raw.length>1024*1024)throw new Error('oversize');
         const release=JSON.parse(raw),version=String(release.tag_name||'').replace(/^v/,'');
@@ -57,7 +58,7 @@ function createAppUpdates({currentVersion,updater,tokenProvider=repositoryToken,
         if(release.draft||release.prerelease||!/^v?\d+\.\d+\.\d+$/.test(release.tag_name))throw new Error('invalid-release');
         if(compareVersions(version,currentVersion)<=0)return set({status:'current',version,message:'GrokDeck is up to date with the latest published release.'});
         if(!await supported())return set({status:'available',version,message:`GrokDeck ${version} is available. This preview requires manual installation; signed installed builds support in-app updates.`});
-        updater.setFeedURL({provider:'github',owner:'Gamedesigner',repo:'grokdeck',private:true,token});
+        updater.setFeedURL({provider:'github',owner:'Gamedesigner',repo:'grokdeck',private:!!token,...(token?{token}:{})});
         const result=await updater.checkForUpdates();
         if(result?.updateInfo?.version!==version)throw new Error('metadata-mismatch');
         return set({status:'available',version,canInstall:true,message:`GrokDeck ${version} is available to download.`});
