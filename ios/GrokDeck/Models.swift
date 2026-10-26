@@ -140,7 +140,7 @@ enum BridgeError: LocalizedError {
   var errorDescription: String? {
     switch self {
     case .invalidEndpoint:
-      "Use a loopback HTTP address for the simulator, or a trusted HTTPS bridge address. Do not include a path, username, or pairing key in the URL."
+      "Use the HTTPS bridge address from your computer. Do not include a path, username, or pairing key in the URL."
     case .missingPairing: "Connect to your GrokDeck bridge in Settings first."
     case .unauthorized: "The pairing key was rejected. Check the key in Settings."
     case .unavailable:

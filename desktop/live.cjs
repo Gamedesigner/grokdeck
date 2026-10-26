@@ -5,7 +5,10 @@ const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function validId(id){if(typeof id!=='string'||!ID.test(id))throw new Error('Invalid agent');return id;}
 function validNonce(nonce){if(typeof nonce!=='string'||!UUID.test(nonce))throw new Error('Invalid message identifier');return nonce;}
 function createLiveClient({fetchImpl,credentialFile=path.join(os.homedir(),'.grokdeck-bridge','pairing-token-v2')}={}){
+ let protection;
  async function request(route,body,timeout=20000){
+  if(!protection)protection=import('../bridge/local-tls.mjs').then(m=>m.protectDirectory(path.dirname(credentialFile))).catch(error=>{protection=null;throw error;});
+  await protection;
   const {readPrivateFile}=await import('../bridge/local-tls.mjs');
   const token=(await readPrivateFile(credentialFile,128)).trim();
   if(!/^[A-Za-z0-9_-]{43}$/.test(token))throw new Error('Pairing unavailable');

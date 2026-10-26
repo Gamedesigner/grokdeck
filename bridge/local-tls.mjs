@@ -16,9 +16,20 @@ export async function protectDirectory(directory = credentialDirectory) {
   if (!info.isDirectory() || info.isSymbolicLink() || (process.getuid && info.uid !== process.getuid())) throw new Error('Invalid bridge directory');
   if (process.platform === 'win32') {
     // A protected DACL grants only this Windows identity access, including inherited files.
-    await promisify(execFile)('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
-      "$ErrorActionPreference='Stop'; $p=$env:GROKDECK_ACL_DIRECTORY; $sid=[System.Security.Principal.WindowsIdentity]::GetCurrent().User; $acl=New-Object System.Security.AccessControl.DirectorySecurity; $acl.SetOwner($sid); $acl.SetAccessRuleProtection($true,$false); $rule=New-Object System.Security.AccessControl.FileSystemAccessRule($sid,'FullControl','ContainerInherit,ObjectInherit','None','Allow'); $acl.AddAccessRule($rule); Set-Acl -LiteralPath $p -AclObject $acl"],
-      { env: { ...process.env, GROKDECK_ACL_DIRECTORY: path.resolve(directory) }, windowsHide: true });
+    const script = [
+      "$ErrorActionPreference='Stop'; $p=$env:GROKDECK_ACL_DIRECTORY",
+      "$sid=[System.Security.Principal.WindowsIdentity]::GetCurrent().User",
+      "$check=@($p); foreach($name in @('local-tls-v2.json','pairing-token-v2')) { $f=[System.IO.Path]::Combine($p,$name); if([System.IO.File]::Exists($f)) { $check+=$f } }",
+      "foreach($f in $check) { $before=if([System.IO.Directory]::Exists($f)){[System.IO.Directory]::GetAccessControl($f)}else{[System.IO.File]::GetAccessControl($f)}; if(@($sid.Value,'S-1-5-32-544','S-1-5-18') -notcontains $before.GetOwner([System.Security.Principal.SecurityIdentifier]).Value) { throw 'Foreign bridge credential owner' } }",
+      "$acl=[System.Security.AccessControl.DirectorySecurity]::new(); $acl.SetOwner($sid); $acl.SetAccessRuleProtection($true,$false)",
+      "$rule=[System.Security.AccessControl.FileSystemAccessRule]::new($sid,'FullControl','ContainerInherit,ObjectInherit','None','Allow'); $acl.AddAccessRule($rule)",
+      "[System.IO.Directory]::SetAccessControl($p,$acl)"
+    ].join('; ');
+    const environment = { ...process.env, GROKDECK_ACL_DIRECTORY: path.resolve(directory) };
+    // PowerShell 7's inherited module path is incompatible with Windows PowerShell 5.
+    delete environment.PSModulePath;
+    await promisify(execFile)(path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe'),
+      ['-NoProfile', '-NonInteractive', '-Command', script], { env: environment, windowsHide: true });
   } else await fs.chmod(directory, 0o700);
 }
 export async function readPrivateFile(file, maxBytes = 32768) {
