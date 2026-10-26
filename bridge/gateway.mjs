@@ -1,3 +1,4 @@
+import { viewerTarget } from './viewer-target.mjs';
 import { createHash } from "node:crypto";
 import { AsyncLocalStorage } from "node:async_hooks";
 
@@ -42,7 +43,7 @@ export function validateGatewayConnection(value) {
   }
   if (!headers.authorization && !headers["x-anyrun-network-token"] && !headers["x-anyrun-port-token"]) throw invalid();
   if(value.teamId!==undefined&&(typeof value.teamId!=="string"||!/^\d{1,32}$/.test(value.teamId)))throw invalid();
-  return { baseUrl: url.origin, headers, accountScope: value.accountScope, teamId:value.teamId, accountSlot: value.accountSlot ?? "host" };
+  return { baseUrl: url.origin, headers, accountScope: value.accountScope, teamId:value.teamId, accountSlot: value.accountSlot ?? "host", viewerRoute:value.viewerRoute };
 }
 function agentId(id) {
   if (typeof id !== "string" || !AGENT.test(id)) throw new GatewayError("invalid_request", "Choose a valid agent.");
@@ -193,6 +194,17 @@ export function createGateway({ resolveConnection, getAccountScope, fetchImpl = 
         ["absent","hibernated","running"].includes(r.state) && (r.vncUrl===null||typeof r.vncUrl==="string") &&
         (r.windows===undefined||Array.isArray(r.windows)&&r.windows.length<=64&&r.windows.every(w=>record(w)&&Number.isSafeInteger(w.windowIndex)&&w.windowIndex>=0&&w.windowIndex<=63&&typeof w.vncUrl==="string")),{signal,timeout:2000});
     },
+    async viewer(id,windowIndex) {
+      const connection=await resolve();
+      const roster=await api.roster();
+      if(!roster.some(a=>a.id===id&&!a.isRemovedFromSidebar))throw invalid();
+      const status=await api.computer(id);
+      if(status?.state!=='running')throw new GatewayError('viewer_unavailable','Computer is not running.');
+      const raw=windowIndex===null?status.vncUrl:status.windows?.find(w=>w.windowIndex===windowIndex)?.vncUrl;
+      await ensureScope(connection);
+      return {...viewerTarget(raw,connection.viewerRoute),scope:connection.accountScope+':'+(connection.teamId||'')};
+    },
+    async viewerScope() {const c=await resolve();await ensureScope(c);return c.accountScope+':'+(c.teamId||'');},
     async avatar(id) {
       return command("getAgentAvatar", {id:agentId(id)}, r=>record(r)&&(r.dataUrl===null||typeof r.dataUrl==="string"&&r.dataUrl.length<=350000)&&(r.version===null||typeof r.version==="string"));
     },

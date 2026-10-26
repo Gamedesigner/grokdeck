@@ -4,6 +4,8 @@ struct ComputersView: View {
   @EnvironmentObject private var store: DeckStore
   @Environment(\.dismiss) private var dismiss
   let openAgent: (String) -> Void
+  @State private var viewer: DeckComputer?
+  @State private var handoffFailed = false
   @State private var runningOnly = false
   private var shown: [DeckComputer] {
     store.computers.filter { !runningOnly || $0.state == .running }.sorted {
@@ -51,6 +53,13 @@ struct ComputersView: View {
             Label(window.label.isEmpty ? "Window \(window.index + 1)" : window.label,
               systemImage: "macwindow").font(.subheadline).foregroundStyle(.secondary)
           }
+          if computer.state == .running, store.viewerClient != nil {
+            Button("View computer", systemImage: "display") { viewer = computer }.buttonStyle(.borderless)
+          }
+          Button("Open in Grok Bot", systemImage: "arrow.up.right.square") {
+            guard let url = BridgeAddress.conversation(id: computer.agentId), UIApplication.shared.canOpenURL(url) else { handoffFailed = true; return }
+            UIApplication.shared.open(url) { success in if !success { Task { @MainActor in handoffFailed = true } } }
+          }.buttonStyle(.borderless)
           if store.agents.contains(where: { $0.id == computer.agentId }) {
             Button("Open conversation", systemImage: "text.bubble") { openAgent(computer.agentId) }
               .buttonStyle(.borderless).font(.callout)
@@ -62,10 +71,14 @@ struct ComputersView: View {
           systemImage: "desktopcomputer")
       }
       Section {
-        Text("This list shows status only. Starting or viewing a computer is not available here yet.")
+        Text("Open a running computer to view it. Touch and keyboard controls are enabled when connected. For sleeping computers or unavailable connections, open the agent in Grok Bot and select its computer.")
           .font(.caption).foregroundStyle(.secondary)
       }
     }
+    .fullScreenCover(item: $viewer) { computer in
+      if let client = store.viewerClient { NavigationStack { ComputerViewer(client: client, agentID: computer.agentId, name: computer.name) } }
+    }
+    .alert("Grok Bot unavailable", isPresented: $handoffFailed) { Button("OK") {} } message: { Text("Install and sign in to Grok Bot on this iPhone, then open the agent’s computer there.") }
     .navigationTitle("Computers").navigationBarTitleDisplayMode(.inline)
     .toolbar {
       ToolbarItem(placement: .topBarLeading) {

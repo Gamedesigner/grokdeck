@@ -33,6 +33,7 @@ export function createConnectionResolver({session,currentAccountScope,fetchImpl=
     const connection={baseUrl:box.gatewayUrl,...box.gatewayToken?{token:box.gatewayToken}:{},headers:{},accountScope:auth.accountScope,teamId:auth.teamId};
     if(box.networkToken)connection.headers['x-anyrun-network-token']=box.networkToken;
     else if(box.gatewayPortToken)connection.headers['x-anyrun-port-token']=box.gatewayPortToken;
+    connection.viewerRoute={primaryUrl:box.vncUrl,forkBaseUrl:box.forkVncBaseUrl,networkToken:box.networkToken,forkPortToken:box.forkVncPortToken};
     try{validateGatewayConnection(connection);}catch{throw new SessionError('invalid-discovery');}
     cached={appVersion:auth.appVersion,accountScope:auth.accountScope,teamId:auth.teamId,until:Date.now()+60000,connection};
     return connection;

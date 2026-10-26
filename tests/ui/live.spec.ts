@@ -12,7 +12,7 @@ test('live composer requires explicit send and preserves an uncertain send until
    send:async(id:string,prompt:string,nonce:string,replyToId?:string)=>{(window as any).__sends.push({id,prompt,nonce,replyToId});return{apiVersion:1,clientNonce:nonce,accepted:null,status:'unknown'};},
    acceptance:async(_:string,nonce:string)=>({apiVersion:1,clientNonce:nonce,accepted:true,status:'accepted'}),interrupt:async()=>({hadActiveRun:false}),openAgent:async()=>true,copy:async()=>true,exportConversation:async()=>false};
  });
- await page.goto('/');await page.getByRole('button',{name:'Connect live',exact:true}).click();await page.locator('.agent-main').first().click();
+ await page.goto('/');await expect(page.getByText('Live gateway',{exact:true})).toBeVisible();await page.locator('.agent-main').first().click();
  await expect(page.getByText('Live gateway',{exact:true})).toBeVisible();
  await expect.poll(()=>page.locator('.transcript').evaluate(el=>el.scrollHeight-el.scrollTop-el.clientHeight)).toBeLessThan(10);
  await expect(page.getByLabel('Search agents and discussions')).toHaveCount(0);

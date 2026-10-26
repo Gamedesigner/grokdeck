@@ -1,4 +1,12 @@
-# iOS connection prototype
+# iPhone setup and development
+
+## Current preview
+
+Version 0.2.5 is verified on a physical iPhone: pairing, live agents, computer viewing, touch input, text entry, full-screen landscape, and Control enabled on connection. Public installation currently requires building with Xcode; TestFlight/App Store distribution is not available yet.
+
+For your own device: run `npm ci && npm run build:viewer`, install XcodeGen, run `xcodegen generate --spec ios/project.yml`, then open `ios/GrokDeck.xcodeproj` in Xcode. Select your own development team and connected iPhone, change the bundle identifier if your signing team requires it, and Run. Keep GrokDeck open on your Mac or Windows PC, signed into your own Grok Bot account. Pair using desktop Settings → Connect your iPhone → Copy phone setup, then iPhone Settings → Quick pairing. Both devices must be on the same trusted network.
+
+The sections below retain earlier distribution and developer-test evidence; they do not imply that an App Store build is available.
 
 ## Distribution preparation
 
@@ -7,12 +15,11 @@ succeeded locally. The archived app has the expected version/build, compiled
 opaque app icons, and all four iPad orientations. This verifies packaging only:
 an upload attempt stopped because App Store Connect has no record for bundle ID
 `com.gamedesigner.grokdeck.ios`. No build was uploaded, processed by TestFlight,
-or released. Create the app record before retrying. The current installed phone build is still the earlier developer
-build. Local release outputs are outside Documents, under
+or released. Create the app record before retrying. The current installed phone build is 0.2.5 build 5 (development-signed). Local release outputs are outside Documents, under
 `~/Library/Developer/Xcode/Archives/GrokDeck-0.2.2.xcarchive` and
 `~/Library/Caches/GrokDeck/ios-distribution-0.2.2`.
 
-Project record: [GrokDeck — Project & Build Log](https://app.notion.com/p/404d9d2a6a048108b540e65f5c033920).
+
 
 This is a native SwiftUI iPhone/iPad prototype, targeting iOS 18 or later. It connects through a separate, authenticated Mac bridge. The default bridge reads the desktop cache; an experimental live bridge enables recent discussion reads, messaging and interruption. The iOS app does not read another app's sandbox or hold Grok Bot backend credentials.
 

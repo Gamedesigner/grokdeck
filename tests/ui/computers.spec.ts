@@ -12,7 +12,7 @@ test('bot images load once as local data and computer list is read-only with an 
     computers:async()=>{(window as any).__computerReads++;return {apiVersion:1,checkedAt:Date.now(),complete:false,computers:[{agentId:'running',name:'Running bot',state:'running',windows:[{index:0,label:'Desktop'}],checkedAt:Date.now()},{agentId:'sleeping',name:'Sleeping bot',state:'hibernated',windows:[],checkedAt:Date.now()},{agentId:'unknown',name:'Unavailable bot',state:'unknown',windows:[],checkedAt:Date.now(),error:'unavailable'}]};},
     liveMessages:async()=>({messages:[],source:{...source,kind:'live-gateway'}}),openAgent:async()=>true,copy:async()=>true,exportConversation:async()=>false};
  });
- await page.goto('/');await page.getByRole('button',{name:'Connect live',exact:true}).click();
+ await page.goto('/');await expect(page.getByText('Live gateway',{exact:true})).toBeVisible();
  await expect(page.getByRole('img',{name:'Running bot avatar'}).first()).toBeVisible();
  await expect(page.getByRole('img',{name:'Running bot avatar'}).first()).toHaveAttribute('src',/^data:image\/png;base64,/);
  await page.getByRole('button',{name:'Computers',exact:true}).click();

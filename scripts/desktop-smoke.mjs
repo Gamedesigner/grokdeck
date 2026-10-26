@@ -56,7 +56,7 @@ await fs.writeFile(
 await fs.mkdir(path.join(temp, "profile"), { recursive: true });
 await fs.writeFile(
   path.join(temp, "profile", "preferences.json"),
-  JSON.stringify({ checkReleases: false }),
+  JSON.stringify({ checkReleases: false, sourcePath: source }),
 );
 let desktop;
 try {

@@ -1,10 +1,10 @@
 {
   "name": "grokdeck",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "private": true,
   "description": "A personal command deck for your Grok Bot conversations",
   "author": "Gamedesigner",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "main": "desktop/main.cjs",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
@@ -20,7 +20,8 @@
     "bridge:live": "electron bridge/live.cjs",
     "bridge:lan": "node bridge/lan.mjs",
     "maintenance:check": "node scripts/check-compatibility.mjs",
-    "package:mac:signed": "node scripts/package-mac-signed.mjs"
+    "package:mac:signed": "node scripts/package-mac-signed.mjs",
+    "build:viewer": "vite build --config scripts/viewer-vite.config.mjs"
   },
   "dependencies": {
     "electron-updater": "6.8.11",
@@ -29,9 +30,11 @@
     "react-dom": "^19.2.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
-    "selfsigned": "5.5.0"
+    "selfsigned": "5.5.0",
+    "ws": "8.22.0"
   },
   "devDependencies": {
+    "@novnc/novnc": "1.6.0",
     "@playwright/test": "^1.58.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
@@ -53,7 +56,9 @@
       "dist/**/*",
       "desktop/**/*",
       "bridge/**/*",
-      "package.json"
+      "package.json",
+      "LICENSE",
+      "THIRD_PARTY.md"
     ],
     "mac": {
       "category": "public.app-category.productivity",

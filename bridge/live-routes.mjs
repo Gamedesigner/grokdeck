@@ -5,7 +5,7 @@ import { loadAvatar } from './avatars.mjs';
 const text=v=>typeof v==='string'?v:'';
 const idPattern='[A-Za-z0-9_-]{1,128}';
 const uuidPattern='[0-9a-fA-F-]{36}';
-export async function liveRoute({req,url,respond,gateway}) {
+export async function liveRoute({req,url,respond,gateway,viewers}) {
   if(url.pathname==='/v1/health' && req.method==='GET') {
     await gateway.status();
     return respond(200,{apiVersion:1,name:'GrokDeck Bridge',readOnly:false,live:true});
@@ -13,6 +13,20 @@ export async function liveRoute({req,url,respond,gateway}) {
   if(url.pathname==='/v1/computers'){
     if(req.method!=='GET')return respond(405,{error:'Method not allowed.'});
     return respond(200,await loadComputers(gateway));
+  }
+  const viewerOpen=url.pathname.match(/^\/v1\/agents\/([A-Za-z0-9_-]{1,128})\/viewer$/);
+  const viewerSession=url.pathname.match(/^\/v1\/viewers\/([A-Za-z0-9_-]{32})\/(exchange|close)$/);
+  if(viewerOpen||viewerSession){
+    if(req.method!=='POST'||!viewers)return respond(405,{error:'Method not allowed.'});
+    const body=await requestJSON(req);
+    if(viewerOpen){
+      if(Object.keys(body).some(k=>k!=='window')||!(body.window===null||Number.isInteger(body.window)&&body.window>=0&&body.window<=63))return respond(400,{error:'Invalid window.'});
+      return respond(200,await viewers.open(await gateway.viewer(viewerOpen[1],body.window)));
+    }
+    const scope=await gateway.viewerScope();
+    if(viewerSession[2]==='close')return respond(200,viewers.close(viewerSession[1],scope));
+    if(Object.keys(body).some(k=>!['sequence','data'].includes(k)))return respond(400,{error:'Invalid viewer request.'});
+    return respond(200,viewers.exchange(viewerSession[1],scope,body));
   }
   const match=url.pathname.match(new RegExp(`^/v1/agents/(${idPattern})/(messages|avatar|send|interrupt|sends/(${uuidPattern}))$`));
   if(url.pathname!=='/v1/agents'&&!match)return respond(404,{error:'Unknown endpoint.'});

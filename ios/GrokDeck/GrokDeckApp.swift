@@ -36,10 +36,10 @@ struct DeckHome: View {
             Label("Your deck, within reach", systemImage: "square.stack.3d.up")
           } description: {
             Text(
-              "Connect to your Mac’s GrokDeck bridge to browse agents and cached discussions. Your iPhone cannot read Grok Bot’s private app data directly."
+              "Connect to GrokDeck on your Mac or Windows PC to bring your own Grok Bot agents, conversations, and computers to your iPhone."
             )
           } actions: {
-            Button("Connect your Mac") { settings = true }.buttonStyle(.borderedProminent)
+            Button("Connect your computer") { settings = true }.buttonStyle(.borderedProminent)
           }
         } else {
           List {
@@ -217,6 +217,13 @@ struct ConnectionView: View {
   var body: some View {
     NavigationStack {
       Form {
+        Section("Set up your own workspace") {
+          Label("1. Sign in to Grok Bot on your Mac or Windows PC.", systemImage: "person.crop.circle")
+          Label("2. Open GrokDeck there. It connects automatically.", systemImage: "desktopcomputer")
+          Label("3. In desktop Settings, start the phone connection and copy phone setup.", systemImage: "link")
+          Label("4. Paste the setup below. Your agents appear after the connection is verified.", systemImage: "checkmark.circle")
+          Text("Keep GrokDeck running on your computer and use the same trusted Wi-Fi. You never need to paste your Grok Bot password here.").font(.caption).foregroundStyle(.secondary)
+        }
         Section {
           PasteButton(payloadType: String.self) { values in
             if let value = values.first { phoneSetup = value }
@@ -257,6 +264,11 @@ struct ConnectionView: View {
           )
         }
         if let error = store.error { Section { Text(error).foregroundStyle(.orange) } }
+        Section("Connection help") {
+          Text("No connection? Keep the computer awake, allow Local Network access on iPhone, and check both devices are on the same trusted network. Guest Wi-Fi may block device-to-device access.")
+          Text("Setup expired? Copy a fresh setup from desktop Settings. Each setup works once and expires after five minutes.")
+          Text("No agents? Check the account signed in to Grok Bot on the computer, then reconnect live in GrokDeck.")
+        }.font(.caption)
         Section("Appearance") {
           Picker("Theme", selection: $appearance) {
             Text("System").tag("system")

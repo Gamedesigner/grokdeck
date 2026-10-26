@@ -205,6 +205,7 @@ async function boot() {
   });
   register("deck:snapshot", () => liveEnabled ? getLiveSnapshot() : getSnapshot());
   register("deck:connect-live", async () => {
+    if(prefs.sourcePath){liveEnabled=false;return getSnapshot();}
     await bridgeProcess.ensure();
     const result=await getLiveSnapshot();
     liveEnabled=true;
@@ -238,6 +239,7 @@ async function boot() {
       properties: ["openDirectory"],
     });
     if (result.canceled) return null;
+    liveEnabled=false;liveMessages.clear();
     prefs.sourcePath = result.filePaths[0];
     await savePrefs();
     return getSnapshot();

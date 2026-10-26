@@ -288,6 +288,12 @@ function App() {
             setPrefs({ ...defaults, ...p });
             prefsRef.current = { ...defaults, ...p };
             setInfo(i);
+            if (bridge.connectLive) {
+              setLiveConnecting(true);
+              try { const connected = await bridge.connectLive(); if (active) { setData(connected); setError(''); } }
+              catch { if (active) setError('Live connection unavailable. Showing saved data while we retry. Open Grok Bot and sign in on this computer.'); }
+              finally { if (active) setLiveConnecting(false); }
+            }
           }
         } else {
           const p = JSON.parse(
@@ -312,15 +318,14 @@ function App() {
     if (!bridge || demo) return;
     let active = true;
     const timer = setInterval(() => {
-      bridge
-        .snapshot()
+      (bridge.connectLive ? bridge.connectLive() : bridge.snapshot())
         .then((s) => {
-          if (active) setData(s);
+          if (active) { setData(s); setError(''); }
         })
         .catch(() => {
           if (active)
             setError(
-              "Cache refresh failed. Previously loaded discussions are still visible.",
+              "Live connection interrupted. Retrying automatically; previously loaded discussions remain visible.",
             );
         });
     }, 15000);
@@ -665,10 +670,7 @@ function App() {
               <Clock3 size={13} />
               {live ? 'Live gateway' : 'Cached view'}
             </span>
-            {bridge?.connectLive && !demo && <button className="button small-button" disabled={liveConnecting || Object.keys(pendingSends).length>0} onClick={async()=>{
-              if(live){try{setData(await bridge.disconnectLive!());avatarRequests.clear();computersRequest.current++;setComputers(null);setComputersLoading(false);setError('');}catch{setError('Could not disconnect live.');}}
-              else await connectLive();
-            }}>{liveConnecting?'Connecting…':live?'Use cached view':'Connect live'}</button>}
+            {bridge?.connectLive && !demo && !live && <button className="button small-button" disabled={liveConnecting} onClick={()=>void connectLive()}>{liveConnecting?'Connecting…':'Retry connection'}</button>}
             <button
               className="icon-button"
               aria-label="Refresh cache"
@@ -773,7 +775,7 @@ function App() {
               )}
             </div>
             {view==='computers' ? <section className="computers-view" aria-label="Computers">
-              {!live ? <div className="empty-state"><Monitor size={28}/><h2>Connect live to view computers</h2><p>Computer status is read from your Mac bridge.</p><button className="button primary" disabled={liveConnecting||!bridge?.connectLive} onClick={()=>void connectLive()}>Connect live</button></div> : <>
+              {!live ? <div className="empty-state"><Monitor size={28}/><h2>Connecting to your computers</h2><p>Computer status is read from your Mac bridge.</p><button className="button primary" disabled={liveConnecting||!bridge?.connectLive} onClick={()=>void connectLive()}>Retry connection</button></div> : <>
                 <div className="list-heading"><label><input type="checkbox" checked={activeComputersOnly} onChange={e=>setActiveComputersOnly(e.target.checked)}/> Active only</label><button className="button small-button" disabled={computersLoading} onClick={()=>void refreshComputers()}><RefreshCw size={14}/>{computersLoading?'Reading status…':'Refresh computers'}</button></div>
                 {computersError&&<p role="alert">{computersError}</p>}
                 {computers&&<p className="search-caption">Bots with running computers: {computers.computers.filter(c=>c.state==='running').length} · Bots checked: {computers.computers.length} · Status unavailable: {computers.computers.filter(c=>c.state==='unknown').length} · {computers.complete?'Complete result':'Partial result'} · {date(computers.checkedAt)}</p>}
@@ -1392,6 +1394,9 @@ function App() {
                 </button>
               </div>
               <hr />
+              <h3>Connect your own Grok Bot account</h3>
+              <ol><li>Open Grok Bot on this computer and sign in to your account.</li><li>Open GrokDeck; it connects automatically. Check that your agents appear.</li><li>To use your iPhone, start the phone connection below and copy its one-time setup.</li><li>On iPhone, open GrokDeck Settings → Quick pairing and paste the setup within five minutes.</li></ol>
+              <p>Your account stays on this computer. Each person runs their own helper; there is no shared GrokDeck account. Never send your setup code to someone else.</p>
               <h3>Connect your iPhone</h3>
               <p>Use the same trusted network on both devices. Keep GrokDeck open while your phone is connected. Once enabled, this connection resumes when GrokDeck opens.</p>
               {phone?.active ? <>
@@ -1414,10 +1419,10 @@ function App() {
               </>}
               {phoneMessage&&<p role="status">{phoneMessage}</p>}
               <h3>GrokDeck updates</h3>
-              <p>Checks use your existing GitHub CLI sign-in or a host-only GrokDeck GitHub token. This private preview can open downloads; in-app installation requires a signed build and published update files.</p>
+              <p>Check GitHub for new GrokDeck releases. Public downloads do not require a GitHub account. In-app installation requires a signed build; otherwise download the installer manually.</p>
               <div className="release-settings">
                 <button className="button" onClick={()=>void checkAppUpdates(true)} disabled={['checking','downloading','installing'].includes(appUpdate?.status||'')}>Check GrokDeck updates</button>
-                <button className="button" onClick={()=>void bridge?.openDownloads?.()}>Open private downloads</button>
+                <button className="button" onClick={()=>void bridge?.openDownloads?.()}>Open downloads</button>
                 {appUpdate&&<p role="status">{appUpdate.message}</p>}
                 {appUpdate?.status==='available'&&appUpdate.canInstall&&<button className="button" onClick={async()=>{
                   setAppUpdate({...appUpdate,status:'downloading',message:'Downloading GrokDeck…'});

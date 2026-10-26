@@ -1,3 +1,4 @@
+import { createViewers } from './viewer.mjs';
 import http from "node:http";
 import https from "node:https";
 import { LOCAL_PORT, protectDirectory, loadLocalIdentity, readPrivateFile } from "./local-tls.mjs";
@@ -50,6 +51,7 @@ export function createBridge({
 } = {}) {
   if (typeof token !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(token))
     throw new Error("A 256-bit pairing token is required");
+  const viewers = gateway ? createViewers() : null;
   const server = (tlsOptions ? https.createServer.bind(https, { ...tlsOptions, minVersion: "TLSv1.2" }) : http.createServer.bind(http))(async (req, res) => {
     const respond = (status, body) => {
       let raw = JSON.stringify(body);
@@ -94,7 +96,7 @@ export function createBridge({
           "Query parameters are not supported. Send pairing credentials only in the Authorization header.",
       });
     if (gateway) {
-      try { return await (gateway.withAccount ? gateway.withAccount(()=>liveRoute({req,url,respond,gateway})) : liveRoute({req,url,respond,gateway})); }
+      try { return await (gateway.withAccount ? gateway.withAccount(()=>liveRoute({req,url,respond,gateway,viewers})) : liveRoute({req,url,respond,gateway,viewers})); }
       catch(error) {
         const invalid=["invalid_request","nonce_reused"].includes(error.code);
         return respond(invalid?400:503,{error:invalid?"Invalid message or reused message identifier.":"Live gateway unavailable. Check Grok Bot on the Mac and reconnect.",code:error.code||"gateway-unavailable"});
@@ -161,6 +163,7 @@ export function createBridge({
   });
   server.requestTimeout = 15000;
   server.headersTimeout = 10000;
+  server.on("close",()=>viewers?.dispose());
   return server;
 }
 export async function startBridge({

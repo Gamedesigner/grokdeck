@@ -9,13 +9,18 @@ settings:
     TARGETED_DEVICE_FAMILY: '1,2'
     CODE_SIGN_STYLE: Automatic
     GENERATE_INFOPLIST_FILE: NO
-    MARKETING_VERSION: '0.2.4'
-    CURRENT_PROJECT_VERSION: 4
+    MARKETING_VERSION: '0.2.5'
+    CURRENT_PROJECT_VERSION: 5
 targets:
   GrokDeck:
     type: application
     platform: iOS
-    sources: [GrokDeck]
+    sources:
+      - path: GrokDeck
+        excludes: [Viewer]
+      - path: GrokDeck/Viewer
+        type: folder
+        buildPhase: resources
     info:
       path: GrokDeck/Info.plist
       properties:
