@@ -32,7 +32,7 @@ try {
   assert.notEqual(before.version,expected,'Baseline already has the target version');
   const offer=await page.evaluate(()=>window.grokdeck.checkAppUpdates(true));
   assert.equal(offer.version,expected);assert.equal(offer.status,'available');assert.equal(offer.canInstall,true);
-  console.log(JSON.stringify({stage:'offered',from:before.version,to:offer.version,testRoot:root}));
+  console.log(JSON.stringify({stage:'offered',from:before.version,fromArch:before.arch,to:offer.version,testRoot:root}));
   const downloaded=await page.evaluate(()=>window.grokdeck.downloadUpdate());
   assert.equal(downloaded.status,'downloaded');assert.equal(downloaded.canInstall,true);
   console.log(JSON.stringify({stage:'downloaded',version:expected}));
@@ -63,7 +63,8 @@ try {
   for(const row of relaunched)process.kill(Number(row[1]),'SIGTERM');
   desktop=await launch();
   const updated=await desktop.firstWindow();await updated.waitForSelector('h1');
-  assert.equal((await updated.evaluate(()=>window.grokdeck.info())).version,expected);
+  const after=await updated.evaluate(()=>window.grokdeck.info());
+  assert.equal(after.version,expected);
   assert.equal((await updated.evaluate(()=>window.grokdeck.preferences())).drafts['update-test'],draft);
-  console.log(JSON.stringify({stage:'passed',version:expected,relaunchObserved:relaunched.length>0,draftPreserved:true,testRoot:root}));
+  console.log(JSON.stringify({stage:'passed',version:expected,fromArch:before.arch,toArch:after.arch,relaunchObserved:relaunched.length>0,draftPreserved:true,testRoot:root}));
 } finally {if(desktop)await desktop.close();}
