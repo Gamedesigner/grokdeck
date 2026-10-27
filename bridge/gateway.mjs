@@ -1,5 +1,5 @@
 import { viewerTarget } from './viewer-target.mjs';
-import {validOrganization,normalizeOrganization} from './organization.mjs';
+import {validOrganization,normalizeOrganization,usesCloudOrganization} from './organization.mjs';
 import { createHash } from "node:crypto";
 import { AsyncLocalStorage } from "node:async_hooks";
 
@@ -124,6 +124,16 @@ export function createGateway({ resolveConnection, getAccountScope, fetchImpl = 
     if (!validate(result)) throw invalid();
     return result;
   };
+  const organizationSnapshot=async()=>{
+    const runtime=typeof api.runtimeSettings.readSnapshot==='function'
+      ? await api.runtimeSettings.readSnapshot()
+      : {organization:await api.runtimeSettings(),appVersion:null,sectionsPresent:false};
+    if(!validOrganization(runtime.organization))throw invalid();
+    if(usesCloudOrganization(runtime.appVersion)&&runtime.sectionsPresent)return {organization:runtime.organization,runtime};
+    const host=await command('getHostSettings',{},record);
+    const organization=normalizeOrganization(host.sidebarSections??runtime.organization.sections,runtime.organization.pins);
+    if(!validOrganization(organization))throw invalid();return {organization,runtime};
+  };
   const api = {
     async withAccount(callback) {
       if(typeof callback!=="function")throw new TypeError("An account-scoped callback is required.");
@@ -202,21 +212,28 @@ export function createGateway({ resolveConnection, getAccountScope, fetchImpl = 
       return {name:row.name,description:typeof row.description==='string'?row.description:'',title:typeof row.title==='string'?row.title:''};
     },
     async organization() {
-      const runtime=await api.runtimeSettings();
-      const host=await command('getHostSettings',{},record);
-      const value=normalizeOrganization(host.sidebarSections??runtime.sections,runtime.pins);
-      if(!validOrganization(value))throw invalid();return value;
+      return (await organizationSnapshot()).organization;
     },
     async updateOrganization(value,expected) {
       if(!validOrganization(value)||!validOrganization(expected))throw new GatewayError('invalid_request','Invalid groups.');
-      const current=await api.organization();
+      const {organization:current,runtime}=await organizationSnapshot();
       if(JSON.stringify(current)!==JSON.stringify(expected))throw new GatewayError('invalid_request','Groups changed. Refresh before trying again.');
       const roster=await api.roster(),known=new Set(roster.filter(a=>!a.isRemovedFromSidebar).map(a=>a.id));
       // Preserve stale references already present, but never add an unknown agent.
       const existing=new Set([...current.pins,...current.sections.flatMap(s=>s.agentIds)]);
       if([...value.pins,...value.sections.flatMap(s=>s.agentIds)].some(id=>!known.has(id)&&!existing.has(id)))throw new GatewayError('invalid_request','Agent unavailable.');
-      if(JSON.stringify(value.sections)!==JSON.stringify(current.sections))await command('setHostSettings',{sidebarSections:value.sections},record);
-      const saved=await api.runtimeSettings(value);
+      let saved;
+      if(usesCloudOrganization(runtime.appVersion)){
+        if(typeof api.runtimeSettings.writeSnapshot!=='function')throw invalid();
+        try{saved=await api.runtimeSettings.writeSnapshot(value,runtime);}
+        catch(error){
+          if(error.code==='organization-conflict')throw new GatewayError('invalid_request','Groups changed. Refresh before trying again.');
+          throw error;
+        }
+      }else{
+        if(JSON.stringify(value.sections)!==JSON.stringify(current.sections))await command('setHostSettings',{sidebarSections:value.sections},record);
+        saved=await api.runtimeSettings(value);
+      }
       if(JSON.stringify(saved)!==JSON.stringify(value))throw invalid();
       const confirmed=await api.organization();if(JSON.stringify(confirmed)!==JSON.stringify(value))throw invalid();return confirmed;
     },

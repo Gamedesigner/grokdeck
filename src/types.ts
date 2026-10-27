@@ -47,6 +47,7 @@ export interface ReleaseStatus {
 export interface AppUpdateStatus {
   status: 'idle'|'checking'|'current'|'available'|'downloading'|'downloaded'|'installing'|'unavailable';
   currentVersion:string; version:string|null; checkedAt:number; canInstall:boolean; message:string;
+  installKind?: 'windows-installer'|'signed-mac';
 }
 export interface Preferences {
   checkReleases: boolean;

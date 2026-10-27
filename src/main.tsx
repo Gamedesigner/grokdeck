@@ -284,10 +284,24 @@ function App() {
     setLoading(true);
     setError("");
     try {
-      if (bridge && !demo) setData(await bridge.snapshot());
+      if (bridge && !demo) {
+        // Use the same helper recovery path as startup and background refresh.
+        // snapshot() alone can keep targeting a helper that has already exited.
+        const next = await (bridge.connectLive ? bridge.connectLive() : bridge.snapshot());
+        setData(next);
+        if (next.source.kind === 'live-gateway') {
+          avatarRequests.clear();
+          computersRequest.current++;
+          setComputers(null);
+          setComputersError('');
+          setComputersLoading(false);
+        }
+      }
       else if (demo) setData(demoSnapshot());
-    } catch (e) {
-      fail(e);
+    } catch {
+      setError(bridge?.connectLive
+        ? 'Could not refresh the connection. Open Grok Bot and confirm you’re signed in. If Grok Bot just updated, check for a GrokDeck update. Previously loaded data remains visible.'
+        : 'Could not refresh saved data. Check the Grok Bot data folder in Settings and try again. Previously loaded data remains visible.');
     } finally {
       setLoading(false);
     }
@@ -722,7 +736,8 @@ function App() {
             {bridge?.connectLive && !demo && !live && <button className="button small-button" disabled={liveConnecting} onClick={()=>void connectLive()}>{liveConnecting?'Connecting…':'Retry connection'}</button>}
             <button
               className="icon-button"
-              aria-label="Refresh cache"
+              aria-label="Refresh workspace"
+              title="Refresh workspace"
               onClick={refresh}
               disabled={loading}
             >
@@ -1383,7 +1398,8 @@ function App() {
               </>}
               {phoneMessage&&<p role="status">{phoneMessage}</p>}
               <h3>GrokDeck updates</h3>
-              <p>Check GitHub for new GrokDeck releases. Public downloads do not require a GitHub account. In-app installation requires a signed build; otherwise download the installer manually.</p>
+              <p>Check GitHub for a new version, download it, then install when you’re ready. Preview builds also check for newer previews. Public downloads do not require a GitHub account.</p>
+              {info.platform==='win32'&&<p>Windows previews are unsigned. Downloads are checked against GitHub’s file hash; Windows may still show Unknown publisher.</p>}
               <div className="release-settings">
                 <button className="button" onClick={()=>void checkAppUpdates(true)} disabled={['checking','downloading','installing'].includes(appUpdate?.status||'')}>Check GrokDeck updates</button>
                 <button className="button" onClick={()=>void bridge?.openDownloads?.()}>Open downloads</button>
@@ -1393,8 +1409,8 @@ function App() {
                   try{setAppUpdate(await bridge!.downloadUpdate!());}catch{setToast('Update download failed. Check again.');void checkAppUpdates(true);}
                 }}>Download GrokDeck {appUpdate.version}</button>}
                 {appUpdate?.status==='downloaded'&&<button className="button" disabled={Object.keys(pendingSends).length>0} onClick={async()=>{
-                  try{await saves.current;setAppUpdate(await bridge!.installUpdate!());}catch{setToast('Resolve pending message delivery before restarting.');}
-                }}>Restart and install</button>}
+                  try{await saves.current;setAppUpdate(await bridge!.installUpdate!());}catch{setToast('Could not start installation. Resolve any pending message delivery, then try again.');}
+                }}>{info.platform==='win32'?'Install update':'Restart and install'}</button>}
               </div>
               <h3>Grok Bot compatibility</h3>
               <div className="version-row">

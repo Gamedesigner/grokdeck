@@ -1,6 +1,6 @@
 {
   "name": "grokdeck",
-  "version": "0.3.0-rc.4",
+  "version": "0.3.0-rc.5",
   "private": true,
   "description": "A clearer Grok Bot experience, built for people with lots of agents",
   "author": {

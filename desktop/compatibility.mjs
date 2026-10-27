@@ -1,6 +1,6 @@
 // Only explicitly reviewed versions may use the private live protocol.
-export const VERIFIED_VERSION='0.75.0';
-export const REVIEWED_VERSIONS=Object.freeze(['0.75.0','0.75.8']);
+export const VERIFIED_VERSION='0.77.0';
+export const REVIEWED_VERSIONS=Object.freeze(['0.75.0','0.75.8','0.77.0']);
 export const supportsLiveVersion=version=>REVIEWED_VERSIONS.includes(version);
 export function compatibilityWarning(version) {
   if(!version)return 'Grok Bot version could not be detected. Live compatibility is unknown.';

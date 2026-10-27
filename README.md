@@ -112,11 +112,11 @@ Default data folders: `~/Library/Application Support/Grok Bot` on Mac and `%APPD
 
 ## Preview boundaries
 
-- GrokDeck is an independent project, not an official Grok Bot client. Its integration uses observed, version-specific interfaces. Grok Bot **0.75.0 and 0.75.8** are currently allowed for live access; an upstream update may require adapter work.
+- GrokDeck is an independent project, not an official Grok Bot client. Its integration uses observed, version-specific interfaces. The source adapter allows Grok Bot **0.75.0, 0.75.8, and 0.77.0**. [The 0.77.0 review](docs/compatibility-0.77.0.md) includes static checks across Windows and both Mac architectures plus live Mac reads; an upstream update may require adapter work.
 - Mac real-account access, shared group changes, a profile-title edit, and a desktop screen have been exercised. Physical iPhone pairing, viewer controls, landscape, and selected-agent fallback have been confirmed.
 - Windows 0.3.0-rc.4 checks cover unsigned app/installer/uninstaller status, website company metadata, bundled signing identities, updater configuration, installation, installed-app security, and uninstall on a disposable CI runner. Renderer checks and a separate-profile secure-storage fixture also pass in CI. Real-account operation and a manual upgrade from the withdrawn signed preview remain separate device checks. Custom-image upload has validation coverage but still needs a real-account check.
 - Attachments, approvals, broader agent permissions, billing, and other unsupported actions remain in Grok Bot. The current editor covers name, title, description, and image.
-- Viewer sessions are bounded and expire; reopen a viewer to reconnect. Shared group updates use two vendor stores and are not atomic. [Implementation and verification details](docs/desktop-agent-tools.md).
+- Viewer sessions are bounded and expire; reopen a viewer to reconnect. Group updates on Grok Bot 0.77.0 use its cloud settings with conflict detection; the older 0.75 adapters use two vendor stores and are not atomic. [Implementation and verification details](docs/desktop-agent-tools.md).
 
 ## Privacy and security
 

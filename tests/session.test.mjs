@@ -130,9 +130,9 @@ test('discovery enforces response size, JSON shape and gateway credential destin
   assert.equal(portOnly.headers['x-anyrun-port-token'],'fixture-port-token');
 });
 
-test('reviewed 0.75.8 preserves session isolation and reports its detected version',async t=>{
-  const f=await fixture(t,{status:{appVersion:'0.75.8'}});
-  assert.equal((await readSession(f)).appVersion,'0.75.8');
+for(const appVersion of ['0.75.8','0.77.0'])test(`reviewed ${appVersion} preserves session isolation and reports its detected version`,async t=>{
+  const f=await fixture(t,{status:{appVersion}});
+  assert.equal((await readSession(f)).appVersion,appVersion);
   assert.equal(await currentAccountScope(f.sourcePath),scope);
 });
 test('version changes invalidate discovery cache and use the detected protocol version',async()=>{
@@ -141,5 +141,6 @@ test('version changes invalidate discovery cache and use the detected protocol v
     calls++;assert.equal(options.headers['x-cursor-client-version'],version);return Response.json(discovery);
   },{session:async()=>({...auth,appVersion:version})});
   await resolve();version='0.75.8';await resolve();assert.equal(calls,2);
-  version='0.75.9';await assert.rejects(resolve(),{code:'unsupported-or-signed-out'});assert.equal(calls,2);
+  version='0.77.0';await resolve();assert.equal(calls,3);
+  version='0.77.1';await assert.rejects(resolve(),{code:'unsupported-or-signed-out'});assert.equal(calls,3);
 });

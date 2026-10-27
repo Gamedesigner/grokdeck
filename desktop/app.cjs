@@ -16,7 +16,7 @@ let window,
   snapshot;
 let releaseChecker, releaseStatus, releasePending;
 const liveClient = require('./live.cjs').createLiveClient();
-const bridgeProcess=require('./bridge-process.cjs').createBridgeProcess({app,client:liveClient});
+const bridgeProcess=require('./bridge-process.cjs').createBridgeProcess({app,client:liveClient,hasPendingSends:()=>unsettledSends.size>0});
 app.on('before-quit',()=>{bridgeProcess.stop();void phoneHost?.stop();});
 let liveEnabled = false;
 const unsettledSends = new Set();
@@ -171,7 +171,7 @@ async function boot() {
     return {copied:true,expiresAt:setup.expiresAt};
   });
   const {autoUpdater}=require('electron-updater');
-  appUpdates=createAppUpdates({currentVersion:app.getVersion(),updater:autoUpdater,
+  appUpdates=createAppUpdates({app,currentVersion:app.getVersion(),updater:autoUpdater,
     supported:()=>installationSupport(app,autoUpdater),hasPendingSends:()=>unsettledSends.size>0});
   register('deck:app-updates', (force=false)=>{
     if(typeof force!=='boolean')throw new Error('Invalid request');
@@ -229,6 +229,7 @@ async function boot() {
   register("deck:computers", async () => {requireLive();return liveClient.computers();});
   register("deck:live-messages", async id => {requireLive();const result=await liveClient.messages(id);liveMessages.set(id,result.messages);return result;});
   register("deck:send", async (id,prompt,nonce,replyToId) => {
+    if(appUpdates?.status().status==='installing')throw new Error('An update is being installed. Please send your message after GrokDeck reopens.');
     requireLive();const key=JSON.stringify([id,nonce]);unsettledSends.add(key);
     const result=await liveClient.send(id,prompt,nonce,replyToId);
     if(['accepted','rejected'].includes(result.status))unsettledSends.delete(key);
