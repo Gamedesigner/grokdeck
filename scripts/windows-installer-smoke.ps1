@@ -88,7 +88,7 @@ try {
     # Existing smoke test creates its own empty source and disposable profile;
     # it disables release checks and never reads a signed-in Grok Bot profile.
     $env:GROKDECK_EXECUTABLE = $app
-    $node = (Get-Command node -CommandType Application).Source
+    $node = (Get-Command node -CommandType Application | Select-Object -First 1).Source
     $smoke = Join-Path $project 'scripts/packaged-security-smoke.mjs'
     Invoke-BoundedProcess $node ('"' + $smoke + '"') 150
 

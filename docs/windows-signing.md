@@ -21,8 +21,12 @@ Windows install or upgrade, or guarantee the absence of SmartScreen prompts.
    CI. Grant only **Artifact Signing Certificate Profile Signer**, scoped to the
    selected certificate profile. Do not grant subscription Contributor or Owner.
 3. Add a GitHub OIDC federated credential with issuer
-   `https://token.actions.githubusercontent.com`, audience `api://AzureADTokenExchange`,
-   and subject `repo:Gamedesigner/grokdeck:environment:windows-signing`.
+   `https://token.actions.githubusercontent.com` and audience `api://AzureADTokenExchange`.
+   Use the repository's **actual** subject prefix from
+   `gh api repos/Gamedesigner/grokdeck/actions/oidc/customization/sub`, followed by
+   `:environment:windows-signing`. GitHub may include immutable owner and repository
+   IDs in that prefix; do not assume the older `repo:OWNER/REPO` format. Match the
+   subject shown by Azure Login exactly, without printing or saving the OIDC token.
 4. Create the GitHub environment `windows-signing`. Restrict deployment branches
    to `main`; configure required reviewers when supported by the repository plan.
    The environment restriction is important because this OIDC subject binds the
