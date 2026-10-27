@@ -36,16 +36,16 @@ Click the pencil beside a section heading in Overview or its section page to ren
 
 ## Download
 
-**Current desktop preview: [0.3.0-rc.2](https://github.com/Gamedesigner/grokdeck/releases/tag/v0.3.0-rc.2).** Includes desktop computer controls, agent editing, synchronized groups, the Windows connection fix, and a single **View computer** action.
+**Current desktop preview: [0.3.0-rc.3](https://github.com/Gamedesigner/grokdeck/releases/tag/v0.3.0-rc.3).** Adds clearer bot counts, rename pencils and sidebar double-click renaming, purple section headings, an animated About splash, and a signed Windows installer.
 
 | Device | Download / install | Status |
 | --- | --- | --- |
-| Mac with Apple silicon | [arm64 DMG](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.2/GrokDeck-0.3.0-rc.2-mac-arm64.dmg) | Developer ID signed and notarized |
-| Mac with Intel | [x64 DMG](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.2/GrokDeck-0.3.0-rc.2-mac-x64.dmg) | Signed and notarized; exercised under Rosetta, separate Intel hardware check pending |
-| Windows PC, x64 | [Windows installer](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.2/GrokDeck-0.3.0-rc.2-win-x64.exe) | Unsigned preview; install updates manually |
+| Mac with Apple silicon | [arm64 DMG](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.3/GrokDeck-0.3.0-rc.3-mac-arm64.dmg) | Developer ID signed and notarized |
+| Mac with Intel | [x64 DMG](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.3/GrokDeck-0.3.0-rc.3-mac-x64.dmg) | Signed and notarized; exercised under Rosetta, separate Intel hardware check pending |
+| Windows PC, x64 | [Windows installer](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.3/GrokDeck-0.3.0-rc.3-win-x64.exe) | Code-signed and timestamped as Ronald Millar; preview updates install manually |
 | iPhone / iPad | [Build with Xcode](docs/ios-prototype.md#current-preview) | iPhone tested; no public TestFlight or App Store download yet |
 
-[All releases](https://github.com/Gamedesigner/grokdeck/releases) · [Checksums](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.2/SHA256SUMS.txt)
+[All releases](https://github.com/Gamedesigner/grokdeck/releases) · [Checksums](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.3/SHA256SUMS.txt)
 
 The preview is a manual download. GitHub’s “Latest” badge and the in-app stable update check still refer to **0.2.5**, which does not include the new desktop tools. Use the links above for 0.3.0. You do not need a GitHub login to download public releases.
 
@@ -114,7 +114,7 @@ Default data folders: `~/Library/Application Support/Grok Bot` on Mac and `%APPD
 
 - GrokDeck is an independent project, not an official Grok Bot client. Its integration uses observed, version-specific interfaces. Grok Bot **0.75.0 and 0.75.8** are currently allowed for live access; an upstream update may require adapter work.
 - Mac real-account access, shared group changes, a profile-title edit, and a desktop screen have been exercised. Physical iPhone pairing, viewer controls, landscape, and selected-agent fallback have been confirmed.
-- Windows packaging, renderer checks, and a separate-profile secure-storage fixture pass in CI. End-to-end operation with a real Windows account remains a separate device check. Custom-image upload has validation coverage but still needs a real-account check.
+- Windows signature, timestamp, installation, installed-app security, and uninstall checks pass on a disposable CI runner. Renderer checks and a separate-profile secure-storage fixture also pass in CI. End-to-end operation with a real Windows account remains a separate device check. Custom-image upload has validation coverage but still needs a real-account check.
 - Attachments, approvals, broader agent permissions, billing, and other unsupported actions remain in Grok Bot. The current editor covers name, title, description, and image.
 - Viewer sessions are bounded and expire; reopen a viewer to reconnect. Shared group updates use two vendor stores and are not atomic. [Implementation and verification details](docs/desktop-agent-tools.md).
 
@@ -137,7 +137,7 @@ Areas we want to improve next:
 - Easier iPhone installation and pairing.
 - A secure way to connect away from home.
 - More Grok Bot actions and richer conversation content.
-- Windows signing and more real-device compatibility checks.
+- A smoother upgrade path and more real-device compatibility checks.
 - Better ways to keep large agent workspaces organized.
 
 These are directions, not release-date promises. See the [roadmap](docs/roadmap.md) and [contribution guide](CONTRIBUTING.md).
@@ -182,7 +182,7 @@ npm run package:mac  # On macOS: arm64 + x64 DMG/ZIP previews
 npm run package:win  # On Windows: x64 installer/ZIP previews
 ```
 
-GitHub Actions tests and packages desktop builds. Public Mac release installers are signed and notarized separately; ordinary local/CI packaging does not use private signing keys. CI does not publish releases automatically. For iOS, see the [Xcode instructions](docs/ios-prototype.md).
+GitHub Actions tests and packages desktop builds. Public Mac apps are Developer ID signed and notarized. The separate [signed Windows workflow](docs/windows-signing.md) uses passwordless Azure authentication and checks the installed app and uninstaller; ordinary local/CI builds remain unsigned previews. CI does not publish releases automatically. For iOS, see the [Xcode instructions](docs/ios-prototype.md).
 
 To refresh these screenshots after a renderer build, run `node scripts/capture-readme.mjs`. It uses only fictional fixtures and blocks outbound requests. [Screenshot details](docs/images/README.md).
 
