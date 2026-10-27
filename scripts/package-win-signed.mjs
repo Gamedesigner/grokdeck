@@ -77,6 +77,32 @@ function run(command, args, options = {}) {
   if (result.status !== 0) throw new Error(`${path.basename(command)} failed (${result.status ?? result.signal}).`);
 }
 
+export function failSigning(error) {
+  process.exitCode = 1;
+  // temp-file's async-exit-hook can call process.exit(0) during cleanup. Match
+  // electron-builder's CLI safeguard so a late verifier error cannot turn green.
+  process.on('exit', () => { process.exitCode = 1; });
+  console.error(error.message);
+}
+
+export async function verifySignatureEvidence(output, expectedPublisher) {
+  const reportPath = path.join(output, 'windows-signature-verification.json');
+  const stat = await fs.stat(reportPath);
+  if (!stat.isFile() || stat.size === 0 || stat.size > 64 * 1024) throw new Error('Missing or invalid Windows signature report.');
+  const report = JSON.parse((await fs.readFile(reportPath, 'utf8')).replace(/^\uFEFF/, ''));
+  const {version} = JSON.parse(await fs.readFile(path.join(projectDir, 'package.json'), 'utf8'));
+  const expectedFiles = new Set(['win-unpacked/GrokDeck.exe', `GrokDeck-${version}-win-x64.exe`]);
+  if (report.schemaVersion !== 1 || !Array.isArray(report.files) || report.files.length !== 2) {
+    throw new Error('Windows signature report is incomplete.');
+  }
+  for (const file of report.files) {
+    if (!expectedFiles.delete(file.file) || file.authenticode !== 'Valid' ||
+        file.publisher !== expectedPublisher || file.timestampPresent !== true || !/^[a-f0-9]{64}$/i.test(file.sha256)) {
+      throw new Error('Windows signature report does not establish both expected signed artifacts.');
+    }
+  }
+}
+
 export async function main(args = process.argv.slice(2)) {
   if (args.some(arg => !['--skip-build', '--check-config'].includes(arg))) {
     throw new Error('Usage: node scripts/package-win-signed.mjs [--skip-build] [--check-config]');
@@ -99,15 +125,16 @@ export async function main(args = process.argv.slice(2)) {
     config,
   });
   await verifyUpdaterPublisher(signedOutput, config.win.azureSignOptions.publisherName);
-  run('powershell.exe', [
+  run('pwsh.exe', [
     '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
     '-File', path.join(projectDir, 'scripts', 'verify-windows-signatures.ps1'),
     '-ReleaseDirectory', signedOutput,
     '-PublisherName', config.win.azureSignOptions.publisherName,
-  ]);
+  ], {timeout: 180_000});
+  await verifySignatureEvidence(signedOutput, config.win.azureSignOptions.publisherName);
   console.log('Windows app and installer signatures, timestamps, and updater publisher verified. Nothing was published.');
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
-  main().catch(error => { console.error(error.message); process.exitCode = 1; });
+  main().catch(failSigning);
 }

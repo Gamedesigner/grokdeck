@@ -64,7 +64,7 @@ $package = Get-Content -LiteralPath (Join-Path $project 'package.json') -Raw | C
 $installer = Join-Path $release "GrokDeck-$($package.version)-win-x64.exe"
 if (-not (Test-Path -LiteralPath $installer -PathType Leaf)) { throw 'Signed NSIS installer is missing.' }
 # Verify before executing the installer, even when this script runs independently.
-$null = Test-InstalledSignature $installer
+$installerEvidence = Test-InstalledSignature $installer
 $runnerTemp = (Resolve-Path -LiteralPath $env:RUNNER_TEMP).Path.TrimEnd('\', '/')
 $testRoot = Join-Path $runnerTemp ('grokdeck-installer-' + [Guid]::NewGuid().ToString('N'))
 $installDirectory = Join-Path $testRoot 'Install With Spaces'
@@ -102,6 +102,7 @@ try {
 
     [ordered]@{
         schemaVersion = 1
+        installer = $installerEvidence
         install = 'passed'
         pathWithSpaces = $true
         files = $verifiedFiles

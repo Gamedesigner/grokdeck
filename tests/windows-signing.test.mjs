@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import {createSigningConfiguration, verifyUpdaterPublisher} from '../scripts/package-win-signed.mjs';
+import {spawnSync} from 'node:child_process';
+import {createSigningConfiguration, verifyUpdaterPublisher, verifySignatureEvidence} from '../scripts/package-win-signed.mjs';
 
 const settings = {
   GROKDECK_SIGNING_ENDPOINT: 'https://eus.codesigning.azure.net/',
@@ -63,5 +64,40 @@ test('updater publisher validation fails closed on missing, mismatched, or crede
   ]) {
     await fs.writeFile(configPath, JSON.stringify({...base, ...patch}));
     await assert.rejects(verifyUpdaterPublisher(root, 'Example Publisher'));
+  }
+});
+
+test('late signing failure remains nonzero when builder cleanup calls process.exit(0)', () => {
+  const script = new URL('../scripts/package-win-signed.mjs', import.meta.url).href;
+  const child = spawnSync(process.execPath, ['--input-type=module', '-e', `
+    import {failSigning} from ${JSON.stringify(script)};
+    process.on('beforeExit', () => process.exit(0));
+    failSigning(new Error('fixture verifier failed'));
+  `], {encoding: 'utf8', timeout: 10_000});
+  assert.equal(child.error, undefined);
+  assert.equal(child.status, 1);
+  assert.match(child.stderr, /fixture verifier failed/);
+});
+
+test('signature evidence is mandatory and must cover both matching timestamped artifacts', async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'grokdeck-signature-report-'));
+  t.after(() => fs.rm(root, {recursive: true, force: true}));
+  const file = path.join(root, 'windows-signature-verification.json');
+  const {version} = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8'));
+  const files = ['win-unpacked/GrokDeck.exe', `GrokDeck-${version}-win-x64.exe`].map(file => ({
+    file, sha256: 'a'.repeat(64), authenticode: 'Valid', publisher: 'Example Publisher', timestampPresent: true,
+  }));
+  await assert.rejects(verifySignatureEvidence(root, 'Example Publisher'));
+  await fs.writeFile(file, '\uFEFF' + JSON.stringify({schemaVersion: 1, files}));
+  await verifySignatureEvidence(root, 'Example Publisher');
+  for (const invalid of [
+    {schemaVersion: 1, files: [files[0]]},
+    {schemaVersion: 1, files: [files[0], files[0]]},
+    {schemaVersion: 1, files: [files[0], {...files[1], publisher: 'Other Publisher'}]},
+    {schemaVersion: 1, files: [files[0], {...files[1], timestampPresent: false}]},
+    {schemaVersion: 1, files: [files[0], {...files[1], authenticode: 'NotSigned'}]},
+  ]) {
+    await fs.writeFile(file, JSON.stringify(invalid));
+    await assert.rejects(verifySignatureEvidence(root, 'Example Publisher'));
   }
 });

@@ -70,8 +70,8 @@ the GrokDeck feed, with no embedded authentication material. The packaged securi
 smoke test checks Electron fuses, renderer isolation, and preference persistence
 before upload. The artifact includes a signature/hash verification report.
 
-On an authenticated Windows x64 development machine with the four `GROKDECK_*`
-variables set, the equivalent command is:
+On an authenticated Windows x64 development machine with PowerShell 7 (`pwsh.exe`)
+and the four `GROKDECK_*` variables set, the equivalent command is:
 
 ```powershell
 node scripts/package-win-signed.mjs
@@ -101,5 +101,7 @@ and [OIDC guidance](https://github.com/Azure/artifact-signing-action/blob/main/d
   previews still need a manual installer download to enter the signed update path.
 - Publish only the intended installer, ZIP, blockmap, and matching updater channel
   metadata. Do not promote prereleases into the stable channel accidentally.
+  Manual previews can publish only installers and checksums; keep their metadata
+  out of the stable update feed.
 - Keep the publisher identity consistent across updates; publisher changes need
   a planned transition for signature checks in existing installations.
