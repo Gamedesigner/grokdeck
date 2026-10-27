@@ -36,18 +36,18 @@ Click the pencil beside a section heading in Overview or its section page to ren
 
 ## Download
 
-**Current desktop preview: [0.3.0-rc.3](https://github.com/Gamedesigner/grokdeck/releases/tag/v0.3.0-rc.3).** Adds clearer bot counts, rename pencils and sidebar double-click renaming, purple section headings, and an animated About splash. The signed Windows download is temporarily withdrawn while its publisher identity is reviewed.
+**Current previews: [Windows 0.3.0-rc.4](https://github.com/Gamedesigner/grokdeck/releases/tag/v0.3.0-rc.4) · [Mac 0.3.0-rc.3](https://github.com/Gamedesigner/grokdeck/releases/tag/v0.3.0-rc.3).** Both include clearer bot counts, rename pencils and sidebar double-click renaming, purple section headings, and an animated About splash. The Windows preview uses ronmillar.com package branding and contains no personal signing certificate.
 
 | Device | Download / install | Status |
 | --- | --- | --- |
 | Mac with Apple silicon | [arm64 DMG](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.3/GrokDeck-0.3.0-rc.3-mac-arm64.dmg) | Developer ID signed and notarized |
 | Mac with Intel | [x64 DMG](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.3/GrokDeck-0.3.0-rc.3-mac-x64.dmg) | Signed and notarized; exercised under Rosetta, separate Intel hardware check pending |
-| Windows PC, x64 | Download temporarily paused; [build from source](#run-from-source) | Replacement signing identity under review; no replacement installer published yet |
+| Windows PC, x64 | [Windows installer](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.4/GrokDeck-0.3.0-rc.4-win-x64.exe) | Unsigned manual preview; Windows shows Unknown publisher and may warn or block installation |
 | iPhone / iPad | [Build with Xcode](docs/ios-prototype.md#current-preview) | iPhone tested; no public TestFlight or App Store download yet |
 
-[All releases](https://github.com/Gamedesigner/grokdeck/releases) · [Checksums](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.3/SHA256SUMS.txt)
+[All releases](https://github.com/Gamedesigner/grokdeck/releases) · [Windows checksums](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.4/SHA256SUMS.txt) · [Mac checksums](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.3/SHA256SUMS.txt)
 
-The preview is a manual download. GitHub’s “Latest” badge and the in-app stable update check still refer to **0.2.5**, which does not include the new desktop tools. Use the links above for 0.3.0. You do not need a GitHub login to download public releases.
+The preview is a manual download. GitHub’s “Latest” badge and the in-app stable update check still refer to **0.2.5**, which does not include the new desktop tools. Use the platform links above for the current 0.3.0 previews. You do not need a GitHub login to download public releases.
 
 ## Get started
 
@@ -114,7 +114,7 @@ Default data folders: `~/Library/Application Support/Grok Bot` on Mac and `%APPD
 
 - GrokDeck is an independent project, not an official Grok Bot client. Its integration uses observed, version-specific interfaces. Grok Bot **0.75.0 and 0.75.8** are currently allowed for live access; an upstream update may require adapter work.
 - Mac real-account access, shared group changes, a profile-title edit, and a desktop screen have been exercised. Physical iPhone pairing, viewer controls, landscape, and selected-agent fallback have been confirmed.
-- Windows signature, timestamp, installation, installed-app security, and uninstall checks pass on a disposable CI runner. Renderer checks and a separate-profile secure-storage fixture also pass in CI. End-to-end operation with a real Windows account remains a separate device check. Custom-image upload has validation coverage but still needs a real-account check.
+- Windows 0.3.0-rc.4 checks cover unsigned app/installer/uninstaller status, website company metadata, bundled signing identities, updater configuration, installation, installed-app security, and uninstall on a disposable CI runner. Renderer checks and a separate-profile secure-storage fixture also pass in CI. Real-account operation and a manual upgrade from the withdrawn signed preview remain separate device checks. Custom-image upload has validation coverage but still needs a real-account check.
 - Attachments, approvals, broader agent permissions, billing, and other unsupported actions remain in Grok Bot. The current editor covers name, title, description, and image.
 - Viewer sessions are bounded and expire; reopen a viewer to reconnect. Shared group updates use two vendor stores and are not atomic. [Implementation and verification details](docs/desktop-agent-tools.md).
 
@@ -182,7 +182,7 @@ npm run package:mac  # On macOS: arm64 + x64 DMG/ZIP previews
 npm run package:win  # On Windows: x64 installer/ZIP previews
 ```
 
-GitHub Actions tests and packages desktop builds. Existing public Mac apps are Developer ID signed and notarized. The separate [signed Windows workflow](docs/windows-signing.md) is paused pending publisher identity review; ordinary local/CI builds remain unsigned previews. New source builds use ronmillar.com for package company and copyright metadata, but branding does not change the verified identity embedded in a signing certificate. CI does not publish releases automatically. For iOS, see the [Xcode instructions](docs/ios-prototype.md).
+GitHub Actions tests and packages desktop builds. Existing public Mac apps are Developer ID signed and notarized. The separate [signed Windows workflow](docs/windows-signing.md) remains paused; Windows preview builds explicitly disable code signing while retaining icon and company metadata editing. New source builds use ronmillar.com for package company and copyright metadata, but branding does not change the verified identity embedded in a signing certificate. CI does not publish releases automatically. For iOS, see the [Xcode instructions](docs/ios-prototype.md).
 
 To refresh these screenshots after a renderer build, run `node scripts/capture-readme.mjs`. It uses only fictional fixtures and blocks outbound requests. [Screenshot details](docs/images/README.md).
 

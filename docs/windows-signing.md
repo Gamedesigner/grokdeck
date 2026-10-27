@@ -1,9 +1,10 @@
 # Signed Windows releases
 
-**Distribution paused:** the 0.3.0-rc.3 signed Windows installer and its downloadable
-signed CI artifacts were withdrawn because the certificate exposed personal
-publisher information. The GitHub signing workflow is disabled pending review of
-a replacement identity. No replacement installer has been published.
+**Signed distribution paused:** the 0.3.0-rc.3 signed Windows installer and its
+downloadable signed CI artifacts were withdrawn because the certificate exposed
+personal publisher information. The GitHub signing workflow remains disabled.
+The owner chose the unsigned [0.3.0-rc.4 Windows preview](https://github.com/Gamedesigner/grokdeck/releases/tag/v0.3.0-rc.4);
+existing signed and notarized Mac downloads remain unchanged.
 
 Microsoft Artifact Signing is optional. A different trusted certificate authority
 or an approved open-source signing program can be used instead. An unsigned EXE
@@ -20,6 +21,22 @@ The signed workflow is separate from unsigned CI previews. It runs manually from
 `main`, creates downloadable workflow artifacts, and does not publish a GitHub
 release. A green signing run proves its checks passed; it does not prove a real
 Windows install or upgrade, or guarantee the absence of SmartScreen prompts.
+
+## Unsigned Windows previews
+
+The normal `npm run package:win` path explicitly sets `signExecutable: false`
+and leaves resource editing enabled. Package company and copyright metadata use
+`ronmillar.com`; Windows still identifies the executable as an unknown publisher.
+The preview contains no personal publisher certificate and requires manual updates.
+
+The desktop workflow runs `verify-windows-unsigned.ps1`, then
+`windows-installer-smoke.ps1 -Unsigned` on a disposable Windows runner. These checks
+require the app, installer, and installed uninstaller to have no signature and the
+expected company metadata. Bundled executable certificates are checked separately;
+only valid upstream Microsoft signatures are allowed on dependencies. Updater
+metadata must have no publisher name, token, or request headers. Reports record
+artifact hashes and installation/security/uninstallation results. Unexpected
+certificate subjects are omitted from logs and reports.
 
 ## One-time owner setup
 
