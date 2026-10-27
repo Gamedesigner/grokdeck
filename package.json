@@ -1,6 +1,6 @@
 {
   "name": "grokdeck",
-  "version": "0.3.0-rc.3",
+  "version": "0.3.0-rc.4",
   "private": true,
   "description": "A clearer Grok Bot experience, built for people with lots of agents",
   "author": {
@@ -72,6 +72,10 @@
       "icon": "build/icon.png"
     },
     "win": {
+      "signExecutable": false,
+      "signAndEditExecutable": true,
+      "azureSignOptions": null,
+      "signtoolOptions": null,
       "target": [
         "nsis",
         "zip"

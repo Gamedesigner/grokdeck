@@ -1,5 +1,8 @@
 [CmdletBinding()]
-param()
+param(
+    [switch]$Unsigned,
+    [string]$ReleaseDirectory
+)
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -9,9 +12,10 @@ if ($env:GITHUB_ACTIONS -cne 'true' -or $env:RUNNER_OS -cne 'Windows' -or
     throw 'Installer smoke tests may run only on an ephemeral GitHub-hosted Windows runner.'
 }
 if ([string]::IsNullOrWhiteSpace($env:RUNNER_TEMP) -or
-    [string]::IsNullOrWhiteSpace($env:GROKDECK_PUBLISHER_NAME)) {
-    throw 'RUNNER_TEMP and GROKDECK_PUBLISHER_NAME are required.'
+    (-not $Unsigned -and [string]::IsNullOrWhiteSpace($env:GROKDECK_PUBLISHER_NAME))) {
+    throw 'RUNNER_TEMP is required; signed mode also requires GROKDECK_PUBLISHER_NAME.'
 }
+if ($Unsigned) { . (Join-Path $PSScriptRoot 'verify-windows-unsigned.ps1') -ReleaseDirectory $ReleaseDirectory }
 
 function Invoke-BoundedProcess {
     param([string]$File, [string]$Arguments, [int]$TimeoutSeconds = 120)
@@ -38,6 +42,7 @@ function Invoke-BoundedProcess {
 
 function Test-InstalledSignature {
     param([string]$File)
+    if ($Unsigned) { return Test-UnsignedGrokDeckFile $File }
     if (-not (Test-Path -LiteralPath $File -PathType Leaf)) { throw 'Installed executable is missing.' }
     $signature = Get-AuthenticodeSignature -LiteralPath $File
     if ($signature.Status -ne [System.Management.Automation.SignatureStatus]::Valid -or
@@ -59,10 +64,13 @@ function Test-InstalledSignature {
 }
 
 $project = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$release = Join-Path $project 'release/windows-signed'
+if ([string]::IsNullOrWhiteSpace($ReleaseDirectory)) {
+    $ReleaseDirectory = Join-Path $project $(if ($Unsigned) { 'release' } else { 'release/windows-signed' })
+}
+$release = (Resolve-Path -LiteralPath $ReleaseDirectory).Path
 $package = Get-Content -LiteralPath (Join-Path $project 'package.json') -Raw | ConvertFrom-Json
 $installer = Join-Path $release "GrokDeck-$($package.version)-win-x64.exe"
-if (-not (Test-Path -LiteralPath $installer -PathType Leaf)) { throw 'Signed NSIS installer is missing.' }
+if (-not (Test-Path -LiteralPath $installer -PathType Leaf)) { throw 'NSIS installer is missing.' }
 # Verify before executing the installer, even when this script runs independently.
 $installerEvidence = Test-InstalledSignature $installer
 $runnerTemp = (Resolve-Path -LiteralPath $env:RUNNER_TEMP).Path.TrimEnd('\', '/')
@@ -80,6 +88,7 @@ try {
     $app = Join-Path $installDirectory 'GrokDeck.exe'
     $uninstaller = Join-Path $installDirectory 'Uninstall GrokDeck.exe'
     $verifiedFiles = @((Test-InstalledSignature $app), (Test-InstalledSignature $uninstaller))
+    $bundleEvidence = if ($Unsigned) { Test-UnsignedGrokDeckBundle $installDirectory } else { $null }
     $unexpectedApp = @(Get-Process -Name GrokDeck -ErrorAction SilentlyContinue | Where-Object {
         $_.Path -and [string]::Equals($_.Path, $app, [StringComparison]::OrdinalIgnoreCase)
     })
@@ -100,16 +109,21 @@ try {
     }
     if (Test-Path -LiteralPath $installDirectory) { throw 'Silent uninstall did not remove the installation directory.' }
 
-    [ordered]@{
+    $report = [ordered]@{
         schemaVersion = 1
+        mode = $(if ($Unsigned) { 'unsigned' } else { 'signed' })
         installer = $installerEvidence
         install = 'passed'
         pathWithSpaces = $true
         files = $verifiedFiles
+        installedBundle = $bundleEvidence
         installedSecuritySmoke = 'passed'
         uninstall = 'passed'
-    } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $release 'windows-installer-verification.json') -Encoding UTF8
-    Write-Host 'Signed installer smoke passed: install, installed app/uninstaller signatures, security checks, and uninstall.'
+    }
+    $json = $report | ConvertTo-Json -Depth 6
+    if ([Text.Encoding]::UTF8.GetByteCount($json) -gt 512KB) { throw 'Installer verification report exceeds its size limit.' }
+    $json | Set-Content -LiteralPath (Join-Path $release 'windows-installer-verification.json') -Encoding UTF8
+    Write-Host 'Installer smoke passed: install, expected app/uninstaller signing state, security checks, and uninstall.'
 } finally {
     $env:GROKDECK_EXECUTABLE = $previousExecutable
     # Cleanup is limited to this newly generated directory. Never clean a path

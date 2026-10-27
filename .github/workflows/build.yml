@@ -61,6 +61,15 @@ jobs:
         run: |
           $env:GROKDECK_EXECUTABLE = (Resolve-Path 'release/win-unpacked/GrokDeck.exe').Path
           node scripts/packaged-security-smoke.mjs
+      - name: Verify unsigned Windows package and publisher privacy
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/verify-windows-unsigned.ps1
+      - name: Install, verify, and uninstall the unsigned Windows preview
+        if: runner.os == 'Windows'
+        shell: pwsh
+        timeout-minutes: 8
+        run: ./scripts/windows-installer-smoke.ps1 -Unsigned
       - name: Smoke test packaged app on macOS
         if: runner.os == 'macOS'
         run: GROKDECK_EXECUTABLE="$PWD/release/mac-arm64/GrokDeck.app/Contents/MacOS/GrokDeck" node scripts/packaged-security-smoke.mjs
@@ -73,5 +82,7 @@ jobs:
             release/*.exe
             release/*.blockmap
             release/latest*.yml
+            release/windows-unsigned-verification.json
+            release/windows-installer-verification.json
           if-no-files-found: error
           retention-days: 14
