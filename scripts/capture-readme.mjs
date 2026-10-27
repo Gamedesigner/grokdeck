@@ -74,7 +74,10 @@ try {
   await page.getByRole('button', { name: 'Computers', exact: true }).click();
   await page.getByRole('button', { name: 'View computer', exact: true }).first().waitFor();
   await page.screenshot({ path: path.join(output, 'computers.png') });
-  console.log('Captured four desktop screenshots using fictional local fixtures only.');
+  await page.getByRole('button', { name: 'About GrokDeck', exact: true }).click();
+  await page.getByRole('dialog', { name: 'GrokDeck', exact: true }).waitFor();
+  await page.screenshot({ path: path.join(output, 'about.png'), animations: 'disabled' });
+  console.log('Captured five desktop screenshots using fictional local fixtures only.');
 } finally {
   await browser?.close();
   if (server.exitCode === null) { const closed = once(server, 'exit'); server.kill('SIGTERM'); await closed; }

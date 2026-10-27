@@ -1,0 +1,77 @@
+name: Build signed Windows installer
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-signing
+  cancel-in-progress: false
+
+jobs:
+  sign:
+    if: github.repository == 'Gamedesigner/grokdeck' && github.ref == 'refs/heads/main'
+    runs-on: windows-2025
+    timeout-minutes: 40
+    environment: windows-signing
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      GROKDECK_SIGNING_ENDPOINT: ${{ secrets.GROKDECK_SIGNING_ENDPOINT }}
+      GROKDECK_SIGNING_ACCOUNT: ${{ secrets.GROKDECK_SIGNING_ACCOUNT }}
+      GROKDECK_SIGNING_PROFILE: ${{ secrets.GROKDECK_SIGNING_PROFILE }}
+      GROKDECK_PUBLISHER_NAME: ${{ vars.GROKDECK_PUBLISHER_NAME }}
+    steps:
+      - name: Check out main
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Validate signing configuration without credentials
+        run: node scripts/package-win-signed.mjs --check-config
+      - run: npm test
+      - run: npm run build
+      - run: npm run test:desktop
+      - name: Verify Windows secure storage
+        run: node scripts/windows-storage-smoke.mjs
+      - name: Sign in to Azure with GitHub OIDC
+        uses: azure/login@935127ca5bb3c4b02c9c2c10060028383878f33f # v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Build and verify signed app and installer
+        run: node scripts/package-win-signed.mjs --skip-build
+      - name: Smoke test signed packaged app
+        shell: pwsh
+        run: |
+          $env:GROKDECK_EXECUTABLE = (Resolve-Path 'release/windows-signed/win-unpacked/GrokDeck.exe').Path
+          node scripts/packaged-security-smoke.mjs
+      - name: Install, verify, and uninstall on the disposable runner
+        shell: pwsh
+        timeout-minutes: 8
+        run: ./scripts/windows-installer-smoke.ps1
+      - name: Upload verified signed artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: GrokDeck-windows-signed
+          path: |
+            release/windows-signed/*.exe
+            release/windows-signed/*.zip
+            release/windows-signed/*.blockmap
+            release/windows-signed/latest*.yml
+            release/windows-signed/rc*.yml
+            release/windows-signed/beta*.yml
+            release/windows-signed/alpha*.yml
+            release/windows-signed/windows-signature-verification.json
+            release/windows-signed/windows-installer-verification.json
+          if-no-files-found: error
+          retention-days: 14

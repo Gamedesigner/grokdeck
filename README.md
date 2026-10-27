@@ -32,6 +32,8 @@ When your agent list grows, finding the right conversation should stay simple. G
 
 Groups and pins are shared with Grok Bot. Notes, drafts, and appearance preferences stay local to GrokDeck. Deleting a group keeps its agents.
 
+Click the pencil beside a section heading in Overview or its section page to rename it. You can also double-click the section name in the sidebar. Counts read **System (3 bots)**, and confirmed name changes appear in Grok Bot too.
+
 ## Download
 
 **Current desktop preview: [0.3.0-rc.2](https://github.com/Gamedesigner/grokdeck/releases/tag/v0.3.0-rc.2).** Includes desktop computer controls, agent editing, synchronized groups, the Windows connection fix, and a single **View computer** action.
@@ -71,6 +73,12 @@ Choose **Computers → View computer** for a running agent, or use the computer 
 Turn off **Active only** to see sleeping or unstarted computers. **Start computer** explicitly starts or resumes a computer and may use your Grok Bot account’s resources. If a screen fails to load, **Open in Grok Bot** opens the agent so you can continue there. “Running” status does not guarantee that its screen endpoint is available.
 
 ![Computers listing three fictional running agents with Open chat, View computer, and Open in Grok Bot actions](docs/images/computers.png)
+
+### Meet the maker
+
+**About GrokDeck** near the bottom of the sidebar opens an animated splash with links to [Ron’s website](https://ronmillar.com) and [@ronmillar on X](https://x.com/ronmillar). It follows your theme and respects reduced-motion settings.
+
+![GrokDeck’s animated About splash with Ron Millar’s credit and website and X links](docs/images/about.png)
 
 ## Connect your iPhone
 

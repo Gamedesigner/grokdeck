@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {ComputerViewer} from './ComputerViewer';
 import {AgentEditor} from './AgentEditor';
 import {OverviewGroups} from './OverviewGroups';
+import {SectionRenameDialog} from './SectionRenameDialog';
+import {AboutDialog} from './AboutDialog';
 import { createRoot } from "react-dom/client";
 import {
   ArrowDown,
@@ -19,11 +21,13 @@ import {
   Download,
   ExternalLink,
   FolderOpen,
+  Info,
   Layers3,
   LoaderCircle,
   MessageSquare,
   Monitor,
   Moon,
+  Pencil,
   Pin,
   Plus,
   RefreshCw,
@@ -138,12 +142,14 @@ function App() {
   const [organizationBusy,setOrganizationBusy]=useState(false);
   const organizationBusyRef=useRef(false);
   const [organizationError,setOrganizationError]=useState('');
+  const [renamingSection,setRenamingSection]=useState<{id:string;name:string}|null>(null);
   const [agentSort,setAgentSort]=useState('recent');
   const [agentFilter,setAgentFilter]=useState('all');
   const [groupFilter,setGroupFilter]=useState('all');
   const [viewer,setViewer]=useState<{id:string;name:string;windowIndex?:number|null}|null>(null);
   const [editingAgent,setEditingAgent]=useState<string|null>(null);
   const [startingComputer,setStartingComputer]=useState<string|null>(null);
+  const [about,setAbout]=useState(false);
   const [data, setData] = useState<Snapshot>(empty),
     [prefs, setPrefs] = useState<Preferences>(defaults),
     [loading, setLoading] = useState(true),
@@ -360,6 +366,7 @@ function App() {
   }, [toast]);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (about || renamingSection) return;
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         setPalette((p) => !p);
@@ -371,7 +378,7 @@ function App() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
+  }, [about, renamingSection]);
   useEffect(() => {
     if (palette) searchInput.current?.focus();
   }, [palette]);
@@ -382,14 +389,22 @@ function App() {
     void refresh();const timer=setInterval(refresh,15000);return()=>{active=false;clearInterval(timer);};
   },[live]);
   const changeOrganization=async(next:import('./types').Organization)=>{
-    if(!syncedOrganization||!bridge?.updateOrganization||organizationBusyRef.current)return;
+    if(!syncedOrganization||!bridge?.updateOrganization||organizationBusyRef.current)return false;
     organizationBusyRef.current=true;setOrganizationBusy(true);setOrganizationError('');
-    try{const result=await bridge.updateOrganization(next,syncedOrganization);setSyncedOrganization(result.organization);}
-    catch{setOrganizationError('Group changes could not be fully confirmed. Reloading from Grok Bot; check the result before trying again.');try{setSyncedOrganization((await bridge.organization!()).organization);}catch{setSyncedOrganization(null);}}
+    try{const result=await bridge.updateOrganization(next,syncedOrganization);setSyncedOrganization(result.organization);return true;}
+    catch{setOrganizationError('Group changes could not be fully confirmed. Reloading from Grok Bot; check the result before trying again.');try{setSyncedOrganization((await bridge.organization!()).organization);}catch{setSyncedOrganization(null);}return false;}
     finally{organizationBusyRef.current=false;setOrganizationBusy(false);}
   };
   const sections=syncedOrganization?.sections??data.sections;
   const organization=syncedOrganization??{sections,pins:[...new Set([...prefs.pins,...data.agents.filter(a=>a.pinned).map(a=>a.id)])]};
+  const selectedSection=view.startsWith('section:')?sections.find(s=>s.id===view.slice(8)):undefined;
+  const canEditSections=!!syncedOrganization&&!!bridge?.updateOrganization&&!organizationBusy;
+  const renameSection=(id:string)=>{
+    const section=sections.find(s=>s.id===id);
+    if(!section)return;
+    if(!canEditSections){announce('Connect live to rename sections in Grok Bot.');return;}
+    setOrganizationError('');setRenamingSection({id:section.id,name:section.name});
+  };
   const agents = useMemo(
     () => data.agents.map(a=>{const group=sections.find(s=>s.agentIds.includes(a.id));return {...a,section:group?.name||'Ungrouped',sectionId:group?.id||'__unassigned__'};}).sort((a,b)=>b.lastActivityAt-a.lastActivityAt),
     [data.agents,sections],
@@ -550,9 +565,12 @@ function App() {
     label: string,
     icon: React.ReactNode,
     count?: number,
+    onRename?: () => void,
   ) => (
     <button
       className={`nav-item ${view === id ? "active" : ""}`}
+      onDoubleClick={onRename}
+      title={onRename?'Double-click to rename section':undefined}
       onClick={() => {
         setView(id);
         setQuery("");
@@ -570,6 +588,10 @@ function App() {
     <div className="app-shell">
       {viewer&&bridge&&<ComputerViewer bridge={bridge} {...viewer} onClose={()=>setViewer(null)}/>}
       {editingAgent&&bridge&&<AgentEditor bridge={bridge} id={editingAgent} onClose={()=>setEditingAgent(null)} onSaved={()=>{avatarRequests.delete(editingAgent);void connectLive();}}/>}
+      {renamingSection&&<SectionRenameDialog name={renamingSection.name} busy={organizationBusy} disabled={!canEditSections} error={organizationError} onClose={()=>setRenamingSection(null)} onSave={async name=>{
+        if(!syncedOrganization?.sections.some(s=>s.id===renamingSection.id)){setOrganizationError('This section is no longer available. Close this dialog and reconnect to refresh your sections.');return;}
+        if(await changeOrganization({...syncedOrganization,sections:syncedOrganization.sections.map(s=>s.id===renamingSection.id?{...s,name}:s)}))setRenamingSection(null);
+      }}/>}
       <aside className="sidebar">
         <div className="window-space" />
         <div className="brand">
@@ -616,6 +638,7 @@ function App() {
                 s.name,
                 <span className="section-dot" />,
                 agents.filter((a) => a.sectionId === s.id).length,
+                () => renameSection(s.id),
               )}
             </React.Fragment>
           ))}
@@ -666,6 +689,11 @@ function App() {
           <button className="settings-button" onClick={() => setSettings(true)}>
             <Settings2 size={17} />
             Settings & appearance
+            <ChevronRight size={15} />
+          </button>
+          <button className="settings-button" onClick={() => {setPalette(false);setSettings(false);setAbout(true);}}>
+            <Info size={17} />
+            About GrokDeck
             <ChevronRight size={15} />
           </button>
           <a className="designer-credit" href="https://ronmillar.com" target="_blank" rel="noopener noreferrer"
@@ -772,10 +800,10 @@ function App() {
                     day: "numeric",
                   })}
                 </div>
-                <h1>
+                <div className="page-title-row"><h1>
                   {title}
                   <span className="title-period">.</span>
-                </h1>
+                </h1>{selectedSection&&<button type="button" className="section-rename-button" disabled={!canEditSections} aria-label={`Rename ${selectedSection.name}`} title={canEditSections?'Rename section':'Connect live to rename sections'} onClick={()=>renameSection(selectedSection.id)}><Pencil size={18}/></button>}</div>
                 <p>
                   {view === "computers" ? "Open, control or start your agents’ computers." : view === "overview"
                     ? "A little less noise. A clearer view of what matters."
@@ -851,8 +879,8 @@ function App() {
               </div>
             ) : (
               <>
-                {view==='overview'&&organizationError&&<p role="alert">{organizationError}</p>}
-                {view==='overview'&&<OverviewGroups disabled={!syncedOrganization||organizationBusy}  agents={agents.filter(match)} organization={organization} onChange={organization=>void changeOrganization(organization)} onOpen={openAgent} renderAvatar={a=><Avatar agent={a} small live={live}/>}/>}
+                {(view==='overview'||selectedSection)&&organizationError&&!renamingSection&&<p role="alert">{organizationError}</p>}
+                {view==='overview'&&<OverviewGroups disabled={!canEditSections} agents={agents.filter(match)} organization={organization} onChange={organization=>void changeOrganization(organization)} onRename={renameSection} onOpen={openAgent} renderAvatar={a=><Avatar agent={a} small live={live}/>}/>}
                 {view!=='overview'&&<>
                 {view==='all'&&<div className="agent-filters">
                   <label>Sort<select aria-label="Sort agents" value={agentSort} onChange={e=>setAgentSort(e.target.value)}><option value="recent">Recent activity</option><option value="oldest">Oldest activity</option><option value="name">Name A–Z</option><option value="group">Group</option></select></label>
@@ -1454,6 +1482,10 @@ function App() {
           </section>
         </div>
       )}
+      {about && <AboutDialog onClose={()=>setAbout(false)}
+        onWebsite={()=>{if(bridge?.openDesigner)void bridge.openDesigner().catch(()=>setToast('Could not open ronmillar.com.'));else window.open('https://ronmillar.com','_blank','noopener,noreferrer');}}
+        onX={()=>{if(bridge?.openCreatorX)void bridge.openCreatorX().catch(()=>setToast('Could not open X.'));else window.open('https://x.com/ronmillar','_blank','noopener,noreferrer');}}
+      />}
       {palette && (
         <div
           className="modal-backdrop palette-backdrop"

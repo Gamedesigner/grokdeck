@@ -226,7 +226,7 @@ kbd {
   font-size: 0.62rem;
   letter-spacing: 0.14em;
   font-weight: 650;
-  color: var(--faint);
+  color: var(--accent);
   padding: 0 13px;
   margin-bottom: 11px;
 }
@@ -1804,6 +1804,18 @@ select {
 .computer-row { flex-wrap:wrap; }
 .agent-group { border:1px solid var(--border,#30313b); border-radius:12px; padding:12px; margin-bottom:16px; min-height:100px; }
 .agent-group .list-heading { margin:0 0 8px; }
+.group-title-row, .page-title-row { display:flex; align-items:center; gap:8px; min-width:0; }
+.group-title-row h3 { margin:0; overflow-wrap:anywhere; }
+.group-title-row small { font-size:inherit; color:var(--muted); font-weight:500; white-space:nowrap; }
+.page-title-row { margin-bottom:11px; }
+.page-title-row h1 { min-width:0; margin:0; overflow-wrap:anywhere; }
+.section-rename-button { display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; width:28px; height:28px; border-radius:6px; color:var(--accent); }
+.section-rename-button:hover:not(:disabled) { background:var(--accent-bg); }
+.section-rename-button:disabled { cursor:default; }
+.section-rename-dialog { width:min(440px,100%); }
+.section-rename-dialog input:not([type=file]) { background:var(--bg); color:var(--text); border-color:var(--border); }
+.section-rename-dialog p { color:var(--muted); line-height:1.5; }
+.section-rename-dialog [role=alert] { color:var(--amber); }
 .group-drop-hint { padding:12px; color:var(--muted,#999); font-size:12px; }
 .agent-row[draggable=true] { cursor:grab; }
 .agent-filters { display:flex; flex-wrap:wrap; gap:16px; margin-bottom:20px; }

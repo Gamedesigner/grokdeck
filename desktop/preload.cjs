@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld("grokdeck", {
   stopPhone: ()=>ipcRenderer.invoke('deck:phone-stop'),
   copyPhoneSetup: ()=>ipcRenderer.invoke('deck:phone-copy-setup'),
   openDesigner: ()=>ipcRenderer.invoke('deck:open-designer'),
+  openCreatorX: ()=>ipcRenderer.invoke('deck:open-creator-x'),
   getAvatar: id => ipcRenderer.invoke("deck:avatar",id),
   computers: () => ipcRenderer.invoke("deck:computers"),
   connectLive: () => ipcRenderer.invoke("deck:connect-live"),

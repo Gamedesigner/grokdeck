@@ -1,6 +1,6 @@
 {
   "name": "grokdeck",
-  "version": "0.3.0-rc.2",
+  "version": "0.3.0-rc.3",
   "private": true,
   "description": "A clearer Grok Bot experience, built for people with lots of agents",
   "author": "Gamedesigner",
@@ -21,7 +21,8 @@
     "bridge:lan": "node bridge/lan.mjs",
     "maintenance:check": "node scripts/check-compatibility.mjs",
     "package:mac:signed": "node scripts/package-mac-signed.mjs",
-    "build:viewer": "vite build --config scripts/viewer-vite.config.mjs"
+    "build:viewer": "vite build --config scripts/viewer-vite.config.mjs",
+    "package:win:signed": "node scripts/package-win-signed.mjs"
   },
   "dependencies": {
     "electron-updater": "6.8.11",

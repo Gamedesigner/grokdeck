@@ -181,6 +181,7 @@ async function boot() {
   register('deck:download-update',()=>appUpdates.download());
   register('deck:install-update',()=>appUpdates.install());
   register('deck:open-designer',()=>shell.openExternal('https://ronmillar.com'));
+  register('deck:open-creator-x',()=>shell.openExternal('https://x.com/ronmillar'));
   register('deck:open-downloads',()=>shell.openExternal(RELEASES_URL));
   register("deck:check-releases", async (force = false) => {
     if (typeof force !== "boolean") throw new Error("Invalid request");

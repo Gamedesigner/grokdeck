@@ -89,6 +89,7 @@ export interface Bridge {
   stopPhone?():Promise<PhoneHostStatus>;
   copyPhoneSetup?():Promise<{copied:boolean;expiresAt?:number}>;
   openDesigner?():Promise<void>;
+  openCreatorX?():Promise<void>;
   checkAppUpdates?(force?:boolean):Promise<AppUpdateStatus>;
   appUpdateStatus?():Promise<AppUpdateStatus>;
   downloadUpdate?():Promise<AppUpdateStatus>;
