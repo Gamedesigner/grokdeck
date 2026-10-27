@@ -801,10 +801,9 @@ function App() {
                 {computersError&&<p role="alert">{computersError}</p>}
                 {computers&&<p className="search-caption">Bots with running computers: {computers.computers.filter(c=>c.state==='running').length} · Bots checked: {computers.computers.length} · Status unavailable: {computers.computers.filter(c=>c.state==='unknown').length} · {computers.complete?'Complete result':'Partial result'} · {date(computers.checkedAt)}</p>}
                 {(computers?.computers||[]).filter(c=>!activeComputersOnly||c.state==='running').map(computer=><article className="computer-row" key={computer.agentId}>
-                  <Monitor size={21}/><div><strong>{computer.name}</strong><span className="computer-state">{computer.state==='running'?'Running':computer.state==='hibernated'?'Sleeping':computer.state==='absent'?'No computer':'Status unavailable'}</span>{computer.windows.map(window=><p key={window.index}>{window.label||`Window ${window.index+1}`}</p>)}{computer.error&&<p>Status could not be read for this agent.</p>}</div>
+                  <Monitor size={21}/><div><strong>{computer.name}</strong><span className="computer-state">{computer.state==='running'?'Running':computer.state==='hibernated'?'Sleeping':computer.state==='absent'?'No computer':'Status unavailable'}</span>{computer.error&&<p>Status could not be read for this agent.</p>}</div>
                   <button className="button small-button" disabled={!agents.some(a=>a.id===computer.agentId)} onClick={()=>{const target=agents.find(a=>a.id===computer.agentId);if(target){setView('all');openAgent(target);}}}>Open chat <ArrowUpRight size={14}/></button>
                   {computer.state==='running'&&bridge?.openViewer&&<button className="button small-button" onClick={()=>setViewer({id:computer.agentId,name:computer.name})}>View computer</button>}
-                  {computer.state==='running'&&computer.windows.map(w=><button className="button small-button" key={w.index} onClick={()=>setViewer({id:computer.agentId,name:computer.name,windowIndex:w.index})}>{w.label||`Window ${w.index+1}`}</button>)}
                   {['absent','hibernated'].includes(computer.state)&&bridge?.startComputer&&<button className="button small-button" disabled={startingComputer!==null} onClick={async()=>{setStartingComputer(computer.agentId);try{await bridge.startComputer!(computer.agentId);await refreshComputers();}catch{setComputersError('Start could not be confirmed. Refresh status or open Grok Bot before trying again.');}finally{setStartingComputer(null);}}}>{startingComputer===computer.agentId?'Starting…':'Start computer'}</button>}
                   <button className="button small-button" onClick={()=>void bridge?.openAgent(computer.agentId)}>Open in Grok Bot</button>
                 </article>)}
@@ -1424,11 +1423,21 @@ function App() {
                 )}
               </div>
               <hr />
+              <h3>About GrokDeck</h3>
+              <p>
+                A clearer Grok Bot experience, built for people with lots of agents.
+                Keep favorites at the top, organize agents into shared groups, and
+                use sorting and search to reach the right conversation or computer.
+              </p>
+              <p>More improvements are on the way. GrokDeck is open source under the MIT license: fork it, make it your own, and contribute your ideas.</p>
+              <button className="text-button" onClick={()=>void bridge?.openDesigner?.()}>GrokDeck by Ron Millar 2026 <ArrowUpRight size={14}/></button>
+              <hr />
               <h3>Your data</h3>
               <p>
-                Pins, notes, reviewed markers, and drafts are saved separately
-                in GrokDeck’s local preferences. Only discussions cached by Grok
-                Bot appear here. No cloud sync or telemetry.
+                Notes, reviewed markers, and drafts stay in GrokDeck’s local preferences.
+                Groups and pins sync to your Grok Bot account while connected live.
+                Cached history remains available when the live connection is interrupted.
+                GrokDeck has no hosted account service or telemetry.
               </p>
               <button
                 className="text-button"

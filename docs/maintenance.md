@@ -6,9 +6,9 @@ reviewed versions, versions needing review, and unavailable checks. Exit code 2
 means at least one feed could not be checked; it does not establish compatibility.
 The checker never accesses Grok Bot sessions or changes the version allowlist.
 
-The local Codex heartbeat checks every six hours while the Mac mini and Codex
-scheduler are available. It uses this checkout and the existing private PR.
-The repository remains private until Ron explicitly changes that decision.
+The maintainer’s local Codex heartbeat is currently paused. Manual checks and
+hosted CI remain available. The repository is public and MIT licensed; nothing
+in this document promises an always-on monitoring service.
 
 When a new Grok Bot version appears, Codex should:
 
@@ -19,7 +19,7 @@ When a new Grok Bot version appears, Codex should:
    until reviewed; retain host-only credentials and uncertain-send handling.
 4. Run the affected tests, desktop builds, and iOS checks. Read-only live checks
    are permitted; new live messages require explicit authorization.
-5. Bump the desktop version, push tested changes to the private branch/PR, and
+5. Bump the desktop version, push tested changes to the reviewed branch/PR, and
    inspect CI for that exact commit. GitHub-hosted Windows runners produce
    artifacts even when the owner's PC is off. Their smoke test does not prove
    Windows account integration. Keep source unchanged while packaging both Mac
@@ -30,7 +30,7 @@ When a new Grok Bot version appears, Codex should:
    artifacts from the matching successful CI run. Windows remains manual-install
    until signing is configured; do not claim unsigned previews can self-install.
 7. Run `node scripts/verify-release.mjs VERSION MAC_DIR WINDOWS_DIR`. Stage a
-   private draft release with the 13 verified artifacts. Fetch its asset metadata
+   draft release with the 13 verified artifacts. Fetch its asset metadata
    from GitHub as JSON with an `assets` array and run the same verifier with that
    JSON path as its fourth argument. It must report `remoteVerified: true`.
    Confirm repository visibility remains PRIVATE before publishing the verified

@@ -1,8 +1,16 @@
 # GrokDeck updates
 
+## Current public previews
+
+The repository is public. Public release checks and downloads do not require a GitHub token. The current 0.3.0 release candidates use manual installer downloads; the stable updater still targets 0.2.5 and does not promote prereleases. Mac release installers are signed and notarized; Windows previews are unsigned. The iPhone app still requires an Xcode development install. See the [README](../README.md#download) for current links.
+
+The sections below preserve historical updater validation and describe its implementation; references to private 0.2.x releases are historical, not the current repository visibility.
+
+## Updater implementation and history
+
 GrokDeck 0.2.0 checks its private GitHub releases separately from Grok Bot's official release feed. Both checks run at launch and every six hours when the release-check preference is enabled. Settings exposes separate manual checks. A newer GrokDeck release appears as an update banner.
 
-The updater uses a host-only `GROKDECK_GITHUB_TOKEN`, or an existing `gh auth login` session for github.com. It never bundles a token or sends it to the renderer or phone. No token is written to GrokDeck preferences. From 0.2.2, when no credential is available it checks for public releases without authentication, so a future public release will not require GitHub sign-in. This does not change repository visibility or expose private releases. Requests are restricted to Gamedesigner/grokdeck; renderer code cannot supply a feed or executable URL. Inaccessible private releases, missing metadata and network failures are unavailable, not up to date. Drafts and prereleases do not establish a current stable release.
+The updater uses a host-only `GROKDECK_GITHUB_TOKEN`, or an existing `gh auth login` session for github.com. It never bundles a token or sends it to the renderer or phone. No token is written to GrokDeck preferences. From 0.2.2, when no credential is available it checks for public releases without authentication, so public releases do not require GitHub sign-in. This does not change repository visibility or expose private releases. Requests are restricted to Gamedesigner/grokdeck; renderer code cannot supply a feed or executable URL. Inaccessible private releases, missing metadata and network failures are unavailable, not up to date. Drafts and prereleases do not establish a current stable release.
 
 Signed installed desktop builds can download through electron-updater and explicitly restart to install. Downloads are not automatic, installation on quit is disabled, and a restart is blocked while message delivery is unresolved. The renderer flushes pending preference saves before requesting a restart. Existing drafts remain in local preferences. Downgrades and web installers are disabled. Windows requires a configured publisher plus a valid matching signature on the running executable; macOS requires a non-ad-hoc TeamIdentifier signature. Download verification remains with electron-updater and the OS.
 

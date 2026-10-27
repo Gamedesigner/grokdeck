@@ -25,7 +25,7 @@ The packaged main-core bundle declares agent activation through `grokbot://app/v
 
 ## Preferences and refresh
 
-GrokDeck uses its own app ID and user-data directory. Preferences contain appearance, local pins, recent selections, notes, reviewed timestamps, drafts, and an optional data-folder selection. Writes are serialized in the renderer and saved through temporary-file rename in the main process. No preference writes touch Grok Bot.
+GrokDeck uses its own app ID and user-data directory. Preferences contain appearance, recent selections, notes, reviewed timestamps, drafts, legacy cached pins, and an optional data-folder selection. In the 0.3.0 preview, live group and pin edits synchronize through the vendor settings adapter. Writes are serialized in the renderer and saved through temporary-file rename in the main process. No preference writes touch Grok Bot.
 
 The cache refreshes every 15 seconds. Cached unread/request state is explicitly labeled and never called live activity. A different locally reported Grok Bot version produces a compatibility warning. The official stable update endpoint is queried on launch and every six hours while enabled, or manually from Settings. Each request uses a separate ephemeral rollout ID, never Grok Bot’s identity or credentials. Errors remain unavailable rather than being reported as up to date. No update download or installation occurs.
 
@@ -33,7 +33,7 @@ The shipped main-core bundle defines the update base URL `https://api2.cursor.sh
 
 ## Distribution
 
-Electron Builder packages renderer output and the desktop bridge/adapter only. GitHub Actions tests first, then builds separate macOS and Windows artifacts. Installation bundles are initially unsigned; signing and notarization are separate release gates. Connect live starts a bundled rendererless helper on authenticated loopback when no existing live bridge is available. Quitting the desktop app stops only the helper it started; it never stops an independently running bridge. Separately launched developer bridge commands provide authenticated loopback access and optional pinned HTTPS on one explicit RFC1918 address. No cloud relay or public listener is created.
+Electron Builder packages renderer output and the desktop bridge/adapter only. GitHub Actions tests first, then builds separate macOS and Windows artifacts. CI installation bundles are previews; public Mac installers are signed and notarized separately. Windows signing remains pending. Connect live starts a bundled rendererless helper on authenticated loopback when no existing live bridge is available. Quitting the desktop app stops only the helper it started; it never stops an independently running bridge. Separately launched developer bridge commands provide authenticated loopback access and optional pinned HTTPS on one explicit RFC1918 address. No cloud relay or public listener is created.
 
 ## Experimental live connection
 

@@ -1,40 +1,31 @@
-# Distribution goal and current gates
+# GrokDeck roadmap
 
-Keep Gamedesigner/grokdeck PRIVATE until Ron explicitly requests publication. Prepare an easy-to-install Mac, Windows and iPhone utility for that eventual release. Visible credit: “GrokDeck by Ron Millar 2026”, linking to https://ronmillar.com.
+GrokDeck is public and MIT licensed. The product goal is a clearer Grok Bot experience for people managing many agents, with room for contributors to build their own workflows. Visible credit: “GrokDeck by Ron Millar 2026”, linking to https://ronmillar.com.
 
-The goal is not complete merely because CI passes. Completion requires installed-app onboarding without developer commands, verified Mac and Windows live access, practical iPhone pairing/distribution, signed and tested self-updates, and an update-maintenance path that can use Codex on the Mac mini plus hosted Windows GitHub Actions while the Windows PC is off.
+## Available in the 0.3.0 desktop preview
 
-Current progress: hosted Mac/Windows CI exists; explicit version gating and private self-update detection exist; the packaged desktop can now start its own bridge; Mac real-account reads work on 0.75.8. Built-in LAN pairing is now implemented with single-use setup codes; packaged Mac startup/resume, Swift HTTPS exchange, and simulator native Paste-to-live-roster are verified; physical phone quick-pair verification is pending. Private0.2.2 releases now contain signed/notarized Mac installers and Windows previews. Real signed Mac0.2.1→0.2.2 installation, relaunch and draft preservation passed on Apple Silicon, including migration from an Intel binary under Rosetta. Six-hour Mac mini compatibility maintenance is active. The iOS0.2.2 archive and distribution export succeeded; upload needs an App Store Connect app record and web sign-in. Still open: signed-helper Keychain consent, Windows credential/runtime and signing verification, iOS distribution, MacBook Pro/Intel hardware checks, and an observed vendor-update-to-Codex-to-tested-build maintenance cycle. Unknown versions must not silently authorize unreviewed commands.
+- Automatic live connection to the signed-in Grok Bot installation on the same computer.
+- Grouped Overview with favorites first, drag-and-drop ordering, right-click moves, and group create/rename/delete. Groups and pins synchronize with Grok Bot.
+- All agents sorting and group/status filters, search, discussions, emoji, replies, local notes and drafts.
+- Desktop computer viewing and control, explicit start/resume, full screen, and Grok Bot fallback.
+- Agent name, title, description, and image editing.
+- Signed/notarized Apple silicon and Intel Mac downloads, plus an unsigned Windows preview.
 
-# Next milestones
+The native iPhone 0.2.5 development build pairs with a desktop helper and supports live discussions, full-screen computer viewing, landscape, touch, typing, and selected-agent fallback. It is not yet available through public TestFlight or the App Store.
 
-## First build verification
+## Next areas to improve
 
-- Produce Mac arm64/x64 installers and Windows x64 installer/ZIP.
-- Run packaged Mac app against real Grok Bot cache; verify conversation handoff.
-- Run Windows package on Windows; verify real cache path, sleep/reconnect, and handoff.
-- Verify MacBook Pro architecture and runtime separately from the Mac mini.
+- Easier iPhone installation and pairing, plus a secure remote-access option for use away from the local network.
+- Windows signing and end-to-end real-account checks, separate from CI’s packaging and synthetic secure-storage tests.
+- More reliable screen availability and clearer recovery when Grok Bot reports a running computer whose screen endpoint fails.
+- Richer conversation content and more agent actions, keeping explicit user intent and account isolation.
+- Workflows for larger agent collections: quicker catch-up, better navigation, and useful organization controls.
+- Additional Intel Mac and MacBook hardware checks; real-account custom-image upload verification.
 
-## Complete the integration
+These are development directions, not release-date commitments. Ideas, forks, and pull requests are welcome; see [CONTRIBUTING](../CONTRIBUTING.md).
 
-- Experimental direct discussion reads and text sends are verified against 0.75.0. Next validate reconnect/expiry and real-device sending under varied network conditions; no public API compatibility is promised.
-- Replace foreground transcript polling with a verified event-stream adapter when needed; preserve scrollback and pending-send semantics.
-- Keep the connection adapter separate from UI code and document version compatibility.
-- Improve attachments, permissions, agent exchanges, and non-text transcript rendering from observed schemas.
-- Verify Ghidra setup and investigate native components only when a concrete integration question depends on them.
+## Maintenance boundaries
 
-## Maintainability and distribution
+Unknown Grok Bot versions stay gated until their interfaces are reviewed. Checks and screenshots must distinguish fixtures, CI, packaged applications, and real devices. A successful build does not prove every vendor account or screen will work.
 
-- Test the adapter against new Grok Bot releases advertised by the official feed; availability notifications do not imply verified compatibility.
-- Signed Mac manifests and private distribution are verified; retain prior releases for manual rollback. Automatic downgrades remain disabled.
-- Configure Windows signing before wider distribution; Mac signing/notarization is verified.
-- Add an explicit migration/backup policy for local notes and customization.
-
-## Product exploration
-
-- A chronological cross-agent catch-up view linked to source messages.
-- Custom sections and a configurable recent-chat rail.
-- Rich, useful status presentation with timestamps and an honest distinction between execution evidence, cached state, and inference.
-- Optional preference sync only after choosing a privacy model.
-
-Bot HQ is reference material, not this project's specification or execution owner. No per-step reports are sent to bots.
+The maintainer’s local compatibility automation is paused. The manual checker and hosted CI remain available; no always-on monitoring service is promised. No per-step reports are sent to bots.

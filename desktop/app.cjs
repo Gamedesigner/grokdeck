@@ -319,6 +319,12 @@ async function boot() {
   });
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   window.webContents.on("will-navigate", (event) => event.preventDefault());
+  app.setAboutPanelOptions({
+    applicationName: "GrokDeck",
+    applicationVersion: app.getVersion(),
+    copyright: "GrokDeck by Ron Millar 2026 · https://ronmillar.com",
+    credits: "A clearer Grok Bot experience, built for people with lots of agents.\nGrouped navigation, pinned favorites, search, and quick access to chats and computers.\nMore improvements are on the way. MIT licensed: fork it, make it your own, and contribute.\nhttps://github.com/Gamedesigner/grokdeck",
+  });
   Menu.setApplicationMenu(
     Menu.buildFromTemplate([
       ...(process.platform === "darwin"

@@ -1,122 +1,183 @@
+<p align="center"><img src="build/icon.png" width="88" alt="GrokDeck icon"></p>
+
 # GrokDeck
 
-Your Grok Bot agents, conversations, and computers in one workspace—on Mac, Windows, and iPhone.
+### A clearer Grok Bot experience, built for people with lots of agents.
 
-**GrokDeck by [Ron Millar](https://ronmillar.com) 2026.** Independent, MIT-licensed software. Bring your own Grok Bot account; no shared account or hosted GrokDeck service is required.
+When your agent list grows, finding the right conversation should stay simple. GrokDeck is an independent front end for Grok Bot that puts favorites, groups, conversations, and agent computers in one organized workspace. Spend less time finding your way around and more time working with your agents.
 
-## Start here
+**GrokDeck by [Ron Millar](https://ronmillar.com) 2026.** Open source. MIT licensed. Bring your own Grok Bot account.
 
-1. Install Grok Bot on your Mac or Windows PC and sign in to **your own account**.
-2. Install GrokDeck on the same computer. It connects live automatically and retries if interrupted.
-3. For iPhone, keep the desktop app running. In desktop Settings, choose your trusted network, start the phone connection, and copy the one-time setup.
-4. In iPhone GrokDeck Settings, paste that setup into Quick pairing within five minutes. Your agents appear after the connection is verified.
+[![Desktop builds](https://github.com/Gamedesigner/grokdeck/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/Gamedesigner/grokdeck/actions/workflows/build.yml)
+[![iOS checks](https://github.com/Gamedesigner/grokdeck/actions/workflows/ios.yml/badge.svg?branch=main)](https://github.com/Gamedesigner/grokdeck/actions/workflows/ios.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-a78bfa.svg)](LICENSE)
 
-Use the same trusted local network. Each person runs their own helper; the desktop app includes it. No Grok Bot password is entered into GrokDeck. The phone gets its own pairing credential, not your Grok Bot session.
+[Download](#download) · [Get started](#get-started) · [Connect your iPhone](#connect-your-iphone) · [Make it your own](#make-it-your-own)
 
-**Preview availability:** Mac live connection and physical iPhone viewing, touch, and typing are tested. Windows live account access still needs physical-device verification. iOS currently requires an Xcode development install; there is no public TestFlight/App Store download yet. See [iOS build instructions](docs/ios-prototype.md).
+![GrokDeck Overview with pinned favorites above agents organized into Creative studio and Everyday groups](docs/images/overview.png)
 
-## Current preview
+*Screenshots show the real desktop interface with fictional example agents and conversations. They contain no personal account data. Source screenshots include the latest changes; older installers may look different.*
 
-- Reads the **real local Grok Bot cache**: agents, sections, unread markers, and cached conversation history.
-- Search names, results, and discussion text; reopen conversations through Grok Bot's agent deep link.
-- Pin agents, keep private notes, save follow-up drafts, and mark items reviewed locally.
-- Export an individual cached discussion as Markdown.
-- Customize dark/light/system appearance, accent color, text size, and density.
-- Detect the locally running Grok Bot version and warn when it differs from the tested adapter version.
-- Check the official stable release feed on launch and every six hours, with a manual check and an option to disable background checks.
-- Explicitly labeled example workspace for exploring the interface without local data.
+## Built for a growing agent workspace
 
-**Modes:** The default desktop view reads the local cache. The experimental live bridge supports current discussions, sending text and replies with emoji, checking delivery, requesting a run interruption, provided bot pictures, and per-bot computer status with an iPhone remote viewer. The desktop connects automatically and starts its bundled local bridge when needed. Replies refresh every two seconds while the discussion is visible. This is version-specific integration verified against Grok Bot 0.75.0, with 0.75.8 protocol review and Mac live-read verification, not a documented public API. Approvals, attachments, and richer actions still use Grok Bot. GrokDeck never modifies its cache or installs Grok Bot updates.
+| When you have lots of agents… | GrokDeck helps you… |
+| --- | --- |
+| Favorites get lost in the list | Keep pinned agents at the top of Overview. |
+| Projects and everyday work mix together | Organize agents into groups that stay in sync with Grok Bot. |
+| The list needs rearranging | Drag agents within or between groups, or right-click to move and pin them. |
+| You need the right agent quickly | Sort All agents by activity, name, or group; filter by status or group; search agents and cached conversations. |
+| You want to pick up a discussion | Read and send messages, reply to a message, use emoji, and keep a local draft. |
+| You need an agent’s computer | See running computers together, open a screen, and use its mouse and keyboard. |
+| You want a workspace that feels like yours | Edit agent names, descriptions, and images; choose your theme, accent, text size, and density. |
 
-## Download the preview
+Groups and pins are shared with Grok Bot. Notes, drafts, and appearance preferences stay local to GrokDeck. Deleting a group keeps its agents.
 
-Download the latest Mac or Windows installer from [releases](https://github.com/Gamedesigner/grokdeck/releases/latest). On a Mac, choose the arm64 DMG for Apple Silicon or x64 DMG for Intel; open it and drag GrokDeck into Applications. Windows has an x64 installer and portable ZIP. Open Grok Bot and sign in, then launch GrokDeck; GrokDeck connects automatically. The desktop installer includes the bridge; no Node.js checkout or terminal command is needed. Allow OS secure-storage access if prompted. Keep GrokDeck open while using a bridge it started. Independently started development bridges are reused and are not stopped when GrokDeck quits.
+## Download
 
-Mac signing, notarization and a real private self-update are verified. Windows signing and broadly available iPhone distribution are still being prepared. To pair an iPhone, open desktop Settings → Connect your iPhone, select your private network address, start the connection, and copy phone setup. Paste it into iPhone Settings → Quick pairing within five minutes. Hosting resumes on app launch until you stop it in Settings. The current iPhone build connects through a paired desktop-hosted private HTTPS bridge; it cannot read another iOS app's private data.
+**Current desktop preview: [0.3.0-rc.2](https://github.com/Gamedesigner/grokdeck/releases/tag/v0.3.0-rc.2).** Includes desktop computer controls, agent editing, synchronized groups, the Windows connection fix, and a single **View computer** action.
 
-## Run locally
+| Device | Download / install | Status |
+| --- | --- | --- |
+| Mac with Apple silicon | [arm64 DMG](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.2/GrokDeck-0.3.0-rc.2-mac-arm64.dmg) | Developer ID signed and notarized |
+| Mac with Intel | [x64 DMG](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.2/GrokDeck-0.3.0-rc.2-mac-x64.dmg) | Signed and notarized; exercised under Rosetta, separate Intel hardware check pending |
+| Windows PC, x64 | [Windows installer](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.2/GrokDeck-0.3.0-rc.2-win-x64.exe) | Unsigned preview; install updates manually |
+| iPhone / iPad | [Build with Xcode](docs/ios-prototype.md#current-preview) | iPhone tested; no public TestFlight or App Store download yet |
 
-Use Node.js 24 LTS or a supported newer version.
+[All releases](https://github.com/Gamedesigner/grokdeck/releases) · [Checksums](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.2/SHA256SUMS.txt)
+
+The preview is a manual download. GitHub’s “Latest” badge and the in-app stable update check still refer to **0.2.5**, which does not include the new desktop tools. Use the links above for 0.3.0. You do not need a GitHub login to download public releases.
+
+## Get started
+
+1. **Open Grok Bot on your Mac or Windows PC** and sign in to your own account.
+2. **Install GrokDeck on the same computer.** On Mac, open the DMG and drag GrokDeck into Applications. On Windows, run the installer. Quit an older GrokDeck before installing a newer one.
+3. **Launch GrokDeck.** It starts its included helper and connects automatically. Allow the OS secure-storage prompt if it appears. No separate GrokBridge download, Node.js installation, or terminal command is needed.
+4. **Check your agents, then organize your workspace.** Open Overview for groups and favorites, All agents for sorting and filtering, or Computers for remote desktops.
+
+Each person connects to their own Grok Bot installation. GrokDeck does not ask you to paste a Grok Bot password or session token. Windows GrokDeck uses the signed-in Windows installation; Mac GrokDeck uses the signed-in Mac installation.
+
+![A fictional Launch planner conversation with the agent toolbar and message composer](docs/images/conversation.png)
+
+### Customize your agents
+
+Open an agent’s conversation and choose **Edit agent** in its toolbar. Change its name, title, description, or image, then choose **Save changes**. Supported image inputs are PNG, JPEG, and WebP under 5 MB. These edits update the agent in Grok Bot.
+
+![The Edit agent dialog with name, title, description, image picker, and explicit Save changes button](docs/images/agent-editor.png)
+
+### Open an agent computer
+
+Choose **Computers → View computer** for a running agent, or use the computer button in a conversation. Mouse and keyboard control starts enabled; turn **Control** off to watch without interacting. Use full screen for more room.
+
+Turn off **Active only** to see sleeping or unstarted computers. **Start computer** explicitly starts or resumes a computer and may use your Grok Bot account’s resources. If a screen fails to load, **Open in Grok Bot** opens the agent so you can continue there. “Running” status does not guarantee that its screen endpoint is available.
+
+![Computers listing three fictional running agents with Open chat, View computer, and Open in Grok Bot actions](docs/images/computers.png)
+
+## Connect your iPhone
+
+The iPhone app uses your paired desktop helper. Installing Grok Bot on the phone does not replace that helper.
+
+1. [Install the iPhone build using Xcode](docs/ios-prototype.md#current-preview). Xcode requires a Mac; the helper you subsequently pair with can run on Mac or Windows.
+2. Put the iPhone and desktop on the **same trusted local network**. Wi-Fi on the phone and Ethernet on the desktop is fine. Guest Wi-Fi may block device-to-device access.
+3. In desktop **Settings → Connect your iPhone**, select your private network address and choose **Start phone connection**, then **Copy phone setup**.
+4. In iPhone **Settings → Quick pairing**, paste the one-time setup within five minutes. Allow **Local Network** access when iOS asks.
+5. Keep the desktop awake and GrokDeck open. Your agent list should appear on the phone.
+
+The setup invitation expires and can be used only once. Create a fresh one if needed. Never share it or include it in a screenshot or issue.
+
+On iPhone, conversations open at the latest message, the composer sits at the bottom, and tapping the conversation dismisses the keyboard. Computers open full screen and support landscape, touch, and typing. **Open in Grok Bot** is available as a fallback; it requires Grok Bot to be installed on the phone.
+
+**Away from home?** Cellular and another Wi-Fi network cannot reach the current local pairing by themselves. A remote-access option is planned; no VPN, public relay, or router port forwarding is configured by GrokDeck today.
+
+## Troubleshooting
+
+| What you see | What to try |
+| --- | --- |
+| Cached view / Retry connection | Open Grok Bot on the same computer and confirm you are signed in. Install the current preview, then relaunch GrokDeck. |
+| Windows opens an older version | Quit the old app, install the new EXE, then check **Settings → Version & compatibility**. |
+| A custom data folder never connects live | Select **Settings → Grok Bot connection → Use default** to return to the same computer’s installation. Copied caches remain snapshots. |
+| iPhone cannot connect | Keep the host awake, check Local Network permission and the trusted network, and copy fresh phone setup if the address changed. |
+| Computer says Running but the viewer fails | Try **Open in Grok Bot**. Some vendor screen endpoints can fail independently of status. |
+| A save could not be confirmed | Reopen the agent or groups and check the current state before retrying. A multi-part save can partially succeed. |
+| A new Grok Bot version is unsupported | Check for a GrokDeck update. A release announcement does not establish protocol compatibility. |
+
+Default data folders: `~/Library/Application Support/Grok Bot` on Mac and `%APPDATA%\Grok Bot` on Windows. If your cache lives elsewhere, use **Settings → Grok Bot connection → Choose folder**. A custom folder does not silently authorize a live connection to another account.
+
+## Preview boundaries
+
+- GrokDeck is an independent project, not an official Grok Bot client. Its integration uses observed, version-specific interfaces. Grok Bot **0.75.0 and 0.75.8** are currently allowed for live access; an upstream update may require adapter work.
+- Mac real-account access, shared group changes, a profile-title edit, and a desktop screen have been exercised. Physical iPhone pairing, viewer controls, landscape, and selected-agent fallback have been confirmed.
+- Windows packaging, renderer checks, and a separate-profile secure-storage fixture pass in CI. End-to-end operation with a real Windows account remains a separate device check. Custom-image upload has validation coverage but still needs a real-account check.
+- Attachments, approvals, broader agent permissions, billing, and other unsupported actions remain in Grok Bot. The current editor covers name, title, description, and image.
+- Viewer sessions are bounded and expire; reopen a viewer to reconnect. Shared group updates use two vendor stores and are not atomic. [Implementation and verification details](docs/desktop-agent-tools.md).
+
+## Privacy and security
+
+GrokDeck has no analytics or hosted account service. Its desktop helper reads the signed-in account through OS-protected storage, keeps decrypted Grok Bot credentials in memory, and sends them only to the validated vendor endpoints needed for the requested operation. The iPhone receives a separate GrokDeck pairing credential stored in its Keychain, not your Grok Bot session.
+
+Desktop and phone connections use authenticated HTTPS with certificate pinning. Phone hosting listens on one selected private network address. Groups, pins, profile edits, and messages you choose to save or send go to your Grok Bot account. Optional update checks contact GitHub and Grok Bot’s update service without conversation content. Exported discussions and clipboard contents can contain private information.
+
+See [security reporting](SECURITY.md), [the security upgrade](docs/security-upgrade-0.2.3.md), and [release/update behavior](docs/app-updates.md). Do not put credentials, setup invitations, private conversations, or sensitive desktop screenshots in public issues.
+
+## Make it your own
+
+**More updates are on the way—and you don’t have to wait for us.** Fork this repo, build the Grok Bot interface you want, and share what you make. GrokDeck is MIT licensed; you can reuse and modify it with the license notice retained.
+
+Ideas, bug reports, UX feedback, and pull requests are welcome. If GrokDeck helps you manage your agents, a star or a link helps others find it.
+
+Areas we want to improve next:
+
+- Easier iPhone installation and pairing.
+- A secure way to connect away from home.
+- More Grok Bot actions and richer conversation content.
+- Windows signing and more real-device compatibility checks.
+- Better ways to keep large agent workspaces organized.
+
+These are directions, not release-date promises. See the [roadmap](docs/roadmap.md) and [contribution guide](CONTRIBUTING.md).
+
+### Run from source
+
+Use Node.js 24 and npm, plus the signed-in Grok Bot desktop app for live data.
 
 ```sh
+git clone https://github.com/Gamedesigner/grokdeck.git
+cd grokdeck
 npm ci
 npm run build
 npm run desktop
 ```
 
-For development, run `npm run dev`, then in a second terminal:
+For renderer development, run `npm run dev`, then in another terminal:
 
 ```sh
+# macOS
 GROKDECK_DEV_URL=http://127.0.0.1:5173 npm run desktop
 ```
 
-On PowerShell, set `$env:GROKDECK_DEV_URL = 'http://127.0.0.1:5173'` before `npm run desktop`.
-
-## Connect your data
-
-GrokDeck automatically checks the conventional Grok Bot data folder:
-
-- macOS: `~/Library/Application Support/Grok Bot`
-- Windows: `%APPDATA%/Grok Bot`
-
-Open Grok Bot and sign in on that computer first. If the folder differs, use **Settings → Choose folder** and select its data folder or `sand-client-persistence` subfolder. Only the selected active account is loaded. You can choose a copied cache folder, but it will remain a snapshot unless you refresh that copy yourself.
-
-The adapter is verified against the macOS Grok Bot 0.75.0 cache. Windows path handling and parser behavior are tested; a Windows Grok Bot cache and Windows runtime still require device verification. No assumption is made that a cache exists on every computer.
-
-## Build installers
-
-```sh
-npm run package:mac  # macOS arm64 + x64 ZIP and DMG, on a Mac
-npm run package:win  # Windows x64 ZIP and NSIS installer, on Windows
+```powershell
+# Windows PowerShell
+$env:GROKDECK_DEV_URL = 'http://127.0.0.1:5173'
+npm run desktop
 ```
 
-GitHub Actions builds both platforms and retains downloadable artifacts. CI produces unsigned previews; Mac releases include locally signed/notarized builds. Windows signing remains to be configured. No release is published automatically.
-
-## Validate
+### Validate and package
 
 ```sh
 npm test
 npm run build
 npx playwright install chromium
 npm run test:ui
+npm run test:desktop
 ```
-
-Cache tests cover active-account isolation, unsupported schemas, corrupt files, symlink rejection, transcript normalization, version warnings, and source non-mutation. UI tests cover search, drafts, notes, preferences, an explicit example workspace, a 120-agent fixture, and untrusted transcript HTML.
-
-## Privacy
-
-No analytics or cloud sync. The default cache adapter reads no credentials. The opt-in live helper reads the active Grok Bot session through OS secure storage on the Mac, keeps decrypted credentials in memory, and sends them only to the observed vendor backend/gateway. The phone receives a separate GrokDeck pairing key, never the Grok Bot session. Optional release checks contact Grok Bot’s official update service with the platform, installed version, and a separate ephemeral rollout ID; they send no account credentials or conversation content. Cache mode reads only allowlisted cache slices and optional `desktop-status.json`. Live mode uses a separate authenticated loopback bridge; the optional phone proxy binds one explicit private LAN address over pinned HTTPS. Notes, pins, drafts, and reviewed markers live in GrokDeck's own local preferences. Exported discussions and clipboard contents may contain your private text; export/copy only when you intend to share them. External images and HTML are not loaded from transcript content.
-
-See [architecture and investigation notes](docs/architecture.md) and [remaining work](docs/roadmap.md).
-
-## iOS prototype
-
-A native SwiftUI companion supports cached and experimental live discussion modes. The physical iPhone is development-signed and paired over private Wi-Fi. An authorized isolated test was accepted by the real gateway and returned `GROKDECK_OK`. See [iOS setup, API, and limitations](docs/ios-prototype.md).
-
-## Experimental live bridge
 
 ```sh
-npm run bridge:live
-# In a separate terminal, for the paired phone on your trusted home network:
-GROKDECK_LAN_HOST=YOUR_MAC_PRIVATE_IPV4 npm run bridge:lan
+npm run package:mac  # On macOS: arm64 + x64 DMG/ZIP previews
+npm run package:win  # On Windows: x64 installer/ZIP previews
 ```
 
-Stop the default `npm run bridge` first because both use pinned HTTPS port 43875. The Mac helper may request Keychain access. It binds its initial account and team; restart it explicitly after switching either in Grok Bot. Do not put tokens into command arguments, source, chat, or Notion. See [connection evidence and limits](docs/live-connection.md) and [iPhone pairing](docs/ios-prototype.md). The live bridge is a developer command, not an automatically enabled service in the desktop installer.
+GitHub Actions tests and packages desktop builds. Public Mac release installers are signed and notarized separately; ordinary local/CI packaging does not use private signing keys. CI does not publish releases automatically. For iOS, see the [Xcode instructions](docs/ios-prototype.md).
 
-## App updates
+To refresh these screenshots after a renderer build, run `node scripts/capture-readme.mjs`. It uses only fictional fixtures and blocks outbound requests. [Screenshot details](docs/images/README.md).
 
-GrokDeck 0.2.2 detects its own GitHub releases as well as Grok Bot releases. Open Settings → GrokDeck updates. Signed Mac builds can download and restart to install; unsigned Windows previews use manual downloads. Private updates use your existing GitHub CLI sign-in or a host-only token. Once the repository is public, public release checks can work without credentials. [Update setup and limits](docs/app-updates.md) · [Grok Bot 0.75.8 review](docs/compatibility-0.75.8.md).
+## License
 
-Security upgrade 0.2.3 uses an authenticated local TLS connection and a new pairing credential. See [security upgrade and re-pairing](docs/security-upgrade-0.2.3.md).
-
-## Agent computers on iPhone
-
-Open Computers and choose View computer for a running agent. The viewer opens full screen, supports portrait and landscape, and enables touch control on connection. Use the hand button to turn control off; Keyboard types text and provides Return, Tab, and Escape. Leaving the viewer or backgrounding the app disconnects the session.
-
-If a computer is unavailable, choose Open in Grok Bot. This targets the agent; select its computer in Grok Bot. The selected-agent handoff is verified on iPhone; a direct-to-computer deep link is not. Sleeping computers are not automatically started by GrokDeck.
-
-The helper relays authenticated screen data; upstream computer credentials stay on the desktop. Viewer sessions expire after ten minutes or thirty seconds without activity. Reopen the viewer to reconnect.
-
-## License and contributions
-
-[MIT](LICENSE), copyright Ron Millar 2026. Reuse and contributions are welcome with the license notice retained. See [third-party notices](THIRD_PARTY.md) for the noVNC viewer's MPL 2.0 license. Do not include account tokens, setup codes, private chats, or screenshots of sensitive desktops in issues.
+[MIT](LICENSE), copyright Ron Millar 2026. Third-party components retain their own licenses; the noVNC viewer uses MPL 2.0. See [third-party notices](THIRD_PARTY.md).

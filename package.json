@@ -1,8 +1,8 @@
 {
   "name": "grokdeck",
-  "version": "0.3.0-rc.1",
+  "version": "0.3.0-rc.2",
   "private": true,
-  "description": "A personal command deck for your Grok Bot conversations",
+  "description": "A clearer Grok Bot experience, built for people with lots of agents",
   "author": "Gamedesigner",
   "license": "MIT",
   "main": "desktop/main.cjs",
