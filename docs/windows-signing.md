@@ -27,7 +27,10 @@ Windows install or upgrade, or guarantee the absence of SmartScreen prompts.
 The normal `npm run package:win` path explicitly sets `signExecutable: false`
 and leaves resource editing enabled. Package company and copyright metadata use
 `ronmillar.com`; Windows still identifies the executable as an unknown publisher.
-The preview contains no personal publisher certificate and requires manual updates.
+The preview contains no personal publisher certificate. From 0.3.0-rc.5, its
+in-app updater can download and verify a newer GitHub installer, then open the
+normal installation wizard after an explicit click. Older previews require one
+manual update to receive this feature. See [update behavior](app-updates.md).
 
 The desktop workflow runs `verify-windows-unsigned.ps1`, then
 `windows-installer-smoke.ps1 -Unsigned` on a disposable Windows runner. These checks

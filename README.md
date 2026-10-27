@@ -36,18 +36,18 @@ Click the pencil beside a section heading in Overview or its section page to ren
 
 ## Download
 
-**Current previews: [Windows 0.3.0-rc.4](https://github.com/Gamedesigner/grokdeck/releases/tag/v0.3.0-rc.4) · [Mac 0.3.0-rc.3](https://github.com/Gamedesigner/grokdeck/releases/tag/v0.3.0-rc.3).** Both include clearer bot counts, rename pencils and sidebar double-click renaming, purple section headings, and an animated About splash. The Windows preview uses ronmillar.com package branding and contains no personal signing certificate.
+**Current preview: [GrokDeck 0.3.0-rc.5 for Mac and Windows](https://github.com/Gamedesigner/grokdeck/releases/tag/v0.3.0-rc.5).** Adds in-app GitHub updates, Grok Bot 0.77.0 compatibility, and workspace refresh recovery. Includes clearer bot counts, rename pencils, sidebar double-click renaming, purple section headings, and an animated About splash. Windows uses ronmillar.com package branding and contains no personal signing certificate.
 
 | Device | Download / install | Status |
 | --- | --- | --- |
-| Mac with Apple silicon | [arm64 DMG](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.3/GrokDeck-0.3.0-rc.3-mac-arm64.dmg) | Developer ID signed and notarized |
-| Mac with Intel | [x64 DMG](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.3/GrokDeck-0.3.0-rc.3-mac-x64.dmg) | Signed and notarized; exercised under Rosetta, separate Intel hardware check pending |
-| Windows PC, x64 | [Windows installer](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.4/GrokDeck-0.3.0-rc.4-win-x64.exe) | Unsigned manual preview; Windows shows Unknown publisher and may warn or block installation |
+| Mac with Apple silicon | [arm64 DMG](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.5/GrokDeck-0.3.0-rc.5-mac-arm64.dmg) | Developer ID signed and notarized |
+| Mac with Intel | [x64 DMG](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.5/GrokDeck-0.3.0-rc.5-mac-x64.dmg) | Signed and notarized; exercised under Rosetta, separate Intel hardware check pending |
+| Windows PC, x64 | [Windows installer](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.5/GrokDeck-0.3.0-rc.5-win-x64.exe) | Unsigned preview; Windows shows Unknown publisher and may warn or block installation |
 | iPhone / iPad | [Build with Xcode](docs/ios-prototype.md#current-preview) | iPhone tested; no public TestFlight or App Store download yet |
 
-[All releases](https://github.com/Gamedesigner/grokdeck/releases) · [Windows checksums](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.4/SHA256SUMS.txt) · [Mac checksums](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.3/SHA256SUMS.txt)
+[All releases](https://github.com/Gamedesigner/grokdeck/releases) · [Checksums](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.5/SHA256SUMS.txt)
 
-The preview is a manual download. GitHub’s “Latest” badge and the in-app stable update check still refer to **0.2.5**, which does not include the new desktop tools. Use the platform links above for the current 0.3.0 previews. You do not need a GitHub login to download public releases.
+**Install this preview manually once if you have an older preview.** After that, use **Settings → GrokDeck updates → Check GrokDeck updates**, download the offered version, then choose **Install update** on Windows or **Restart and install** on Mac. Windows opens its normal installer. Preview builds follow newer previews and stable releases; stable builds stay on stable releases. GitHub’s “Latest” badge still points to stable **0.2.5**. Public downloads do not require a GitHub account. [Update details](docs/app-updates.md).
 
 ## Get started
 
@@ -114,7 +114,7 @@ Default data folders: `~/Library/Application Support/Grok Bot` on Mac and `%APPD
 
 - GrokDeck is an independent project, not an official Grok Bot client. Its integration uses observed, version-specific interfaces. The source adapter allows Grok Bot **0.75.0, 0.75.8, and 0.77.0**. [The 0.77.0 review](docs/compatibility-0.77.0.md) includes static checks across Windows and both Mac architectures plus live Mac reads; an upstream update may require adapter work.
 - Mac real-account access, shared group changes, a profile-title edit, and a desktop screen have been exercised. Physical iPhone pairing, viewer controls, landscape, and selected-agent fallback have been confirmed.
-- Windows 0.3.0-rc.4 checks cover unsigned app/installer/uninstaller status, website company metadata, bundled signing identities, updater configuration, installation, installed-app security, and uninstall on a disposable CI runner. Renderer checks and a separate-profile secure-storage fixture also pass in CI. Real-account operation and a manual upgrade from the withdrawn signed preview remain separate device checks. Custom-image upload has validation coverage but still needs a real-account check.
+- Windows 0.3.0-rc.5 checks cover unsigned app/installer/uninstaller status, website company metadata, bundled signing identities, updater configuration, installation, installed-app security, and uninstall on a disposable CI runner. Renderer checks and a separate-profile secure-storage fixture also pass in CI. Real-account operation and a manual upgrade from the withdrawn signed preview remain separate device checks. Custom-image upload has validation coverage but still needs a real-account check.
 - Attachments, approvals, broader agent permissions, billing, and other unsupported actions remain in Grok Bot. The current editor covers name, title, description, and image.
 - Viewer sessions are bounded and expire; reopen a viewer to reconnect. Group updates on Grok Bot 0.77.0 use its cloud settings with conflict detection; the older 0.75 adapters use two vendor stores and are not atomic. [Implementation and verification details](docs/desktop-agent-tools.md).
 

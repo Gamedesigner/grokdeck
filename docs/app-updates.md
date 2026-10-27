@@ -49,11 +49,17 @@ build is a prerequisite, not proof of the private updater's download/restart pat
 For a real Mac update integration test, set `GROKDECK_UPDATE_BASELINE` to an older
 signed `.app` and `GROKDECK_UPDATE_EXPECTED` to the published target version,
 then run `node scripts/update-install-smoke.mjs`. It copies the baseline into a
-fresh cache folder and uses an isolated profile. The test calls the real release
+fresh cache folder and starts with a disposable profile. Squirrel's automatic
+restart drops launch arguments and briefly uses the normal GrokDeck profile;
+the test reports this, stops only its disposable executable, and reopens it with
+the test profile. Updater caches are shared, so run without another update in
+progress. The test calls the real release
 check, download, and restart APIs, requires app replacement and relaunch, verifies
 the resulting signature/Gatekeeper status, and reopens the updated app to check
 that a local draft survived. It does not send bot messages or replace the user's
-installed app. Test copies remain in the reported folder for inspection.
+installed app. Its brief normal-profile relaunch may perform normal startup reads
+or resume configured phone hosting. Test copies remain in the reported folder
+for inspection.
 
 This updates GrokDeck, not Grok Bot. Newly detected Grok Bot versions are never automatically added to the live-protocol allowlist: an app update must carry an explicitly reviewed adapter. Versions 0.75.0, 0.75.8, and 0.77.0 are currently allowed; all other versions fail closed for live requests. Version changes invalidate gateway discovery cache. See the [0.77.0 review](compatibility-0.77.0.md) for current evidence and limits.
 
