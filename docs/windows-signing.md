@@ -1,5 +1,16 @@
 # Signed Windows releases
 
+**Distribution paused:** the 0.3.0-rc.3 signed Windows installer and its downloadable
+signed CI artifacts were withdrawn because the certificate exposed personal
+publisher information. The GitHub signing workflow is disabled pending review of
+a replacement identity. No replacement installer has been published.
+
+Microsoft Artifact Signing is optional. A different trusted certificate authority
+or an approved open-source signing program can be used instead. An unsigned EXE
+does not embed our personal signing certificate, but Windows shows an unknown
+publisher and may warn or block installation. Changing package branding to
+`ronmillar.com` does not change a certificate's verified publisher.
+
 Windows releases use Authenticode code signing and an RFC 3161 timestamp. Apple
 notarization applies to the Mac release. A valid Windows signature identifies the
 publisher and detects changes; new downloads can still show SmartScreen warnings
@@ -49,8 +60,13 @@ Windows install or upgrade, or guarantee the absence of SmartScreen prompts.
 No PFX, private key, password, client secret, access token, or identity document
 belongs in GitHub or the application. OIDC uses a short-lived identity scoped to
 the signing environment. The public certificate includes the verified publisher
-identity; review its subject before release. Leave optional street-address and
-postal-code disclosure disabled unless you intend to publish those fields.
+identity. Review the **entire leaf certificate subject**, including common name,
+organization, locality, state, country, address, postal code, and email, before
+building any distributable artifacts. Confirm the approved identity for the app,
+installer, uninstaller, and bundled signed binaries. A valid signature and matching
+common name do not establish publisher privacy. Disabling street/postal disclosure
+does not remove city/state/country from an Azure Public Trust certificate. Azure's
+custom common-name/organization values are [not supported](https://learn.microsoft.com/en-us/azure/artifact-signing/faq#can-i-use-a-custom-cn-or-a-custom-o-with-artifact-signing).
 
 ## Build and verify
 

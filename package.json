@@ -3,7 +3,10 @@
   "version": "0.3.0-rc.3",
   "private": true,
   "description": "A clearer Grok Bot experience, built for people with lots of agents",
-  "author": "Gamedesigner",
+  "author": {
+    "name": "ronmillar.com",
+    "url": "https://ronmillar.com"
+  },
   "license": "MIT",
   "main": "desktop/main.cjs",
   "scripts": {
@@ -49,6 +52,7 @@
   "build": {
     "appId": "com.gamedesigner.grokdeck",
     "productName": "GrokDeck",
+    "copyright": "Copyright © 2026 ronmillar.com",
     "asar": true,
     "directories": {
       "output": "release"

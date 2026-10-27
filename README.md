@@ -36,13 +36,13 @@ Click the pencil beside a section heading in Overview or its section page to ren
 
 ## Download
 
-**Current desktop preview: [0.3.0-rc.3](https://github.com/Gamedesigner/grokdeck/releases/tag/v0.3.0-rc.3).** Adds clearer bot counts, rename pencils and sidebar double-click renaming, purple section headings, an animated About splash, and a signed Windows installer.
+**Current desktop preview: [0.3.0-rc.3](https://github.com/Gamedesigner/grokdeck/releases/tag/v0.3.0-rc.3).** Adds clearer bot counts, rename pencils and sidebar double-click renaming, purple section headings, and an animated About splash. The signed Windows download is temporarily withdrawn while its publisher identity is reviewed.
 
 | Device | Download / install | Status |
 | --- | --- | --- |
 | Mac with Apple silicon | [arm64 DMG](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.3/GrokDeck-0.3.0-rc.3-mac-arm64.dmg) | Developer ID signed and notarized |
 | Mac with Intel | [x64 DMG](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.3/GrokDeck-0.3.0-rc.3-mac-x64.dmg) | Signed and notarized; exercised under Rosetta, separate Intel hardware check pending |
-| Windows PC, x64 | [Windows installer](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.3/GrokDeck-0.3.0-rc.3-win-x64.exe) | Code-signed and timestamped as Ronald Millar; preview updates install manually |
+| Windows PC, x64 | Download temporarily paused; [build from source](#run-from-source) | Replacement signing identity under review; no replacement installer published yet |
 | iPhone / iPad | [Build with Xcode](docs/ios-prototype.md#current-preview) | iPhone tested; no public TestFlight or App Store download yet |
 
 [All releases](https://github.com/Gamedesigner/grokdeck/releases) · [Checksums](https://github.com/Gamedesigner/grokdeck/releases/download/v0.3.0-rc.3/SHA256SUMS.txt)
@@ -182,7 +182,7 @@ npm run package:mac  # On macOS: arm64 + x64 DMG/ZIP previews
 npm run package:win  # On Windows: x64 installer/ZIP previews
 ```
 
-GitHub Actions tests and packages desktop builds. Public Mac apps are Developer ID signed and notarized. The separate [signed Windows workflow](docs/windows-signing.md) uses passwordless Azure authentication and checks the installed app and uninstaller; ordinary local/CI builds remain unsigned previews. CI does not publish releases automatically. For iOS, see the [Xcode instructions](docs/ios-prototype.md).
+GitHub Actions tests and packages desktop builds. Existing public Mac apps are Developer ID signed and notarized. The separate [signed Windows workflow](docs/windows-signing.md) is paused pending publisher identity review; ordinary local/CI builds remain unsigned previews. New source builds use ronmillar.com for package company and copyright metadata, but branding does not change the verified identity embedded in a signing certificate. CI does not publish releases automatically. For iOS, see the [Xcode instructions](docs/ios-prototype.md).
 
 To refresh these screenshots after a renderer build, run `node scripts/capture-readme.mjs`. It uses only fictional fixtures and blocks outbound requests. [Screenshot details](docs/images/README.md).
 
