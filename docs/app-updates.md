@@ -16,6 +16,28 @@ Public metadata is requested without authentication first. For a private reposit
 
 The sections below preserve historical updater validation; references to private 0.2.x releases describe the repository at that time.
 
+## 0.3.0-rc.5 verification
+
+The desktop workflow passed on Windows, Mac and Linux, and the iOS regression
+workflow passed for the same production commit. Coverage includes 138 Node
+tests, 16 browser tests, Electron bridge checks, package security checks, and
+Windows secure-storage, unsigned publisher metadata, install and uninstall checks.
+
+A separate signed Apple-silicon test app, packaged with the new updater code and
+a lower test version, downloaded the public rc.5 release, installed it through
+Squirrel.Mac, and relaunched. The resulting app passed its signing requirement
+and Gatekeeper checks; its saved draft and source-folder preference survived.
+This verifies the new updater's native path, not an upgrade from an old preview
+that lacks this updater. The shipped Intel app passed packaged checks under
+Rosetta; an actual Intel-machine update remains unverified. Windows installer
+download/hash verification and installation checks passed separately; a complete
+in-app upgrade on a user's Windows PC remains a device check.
+
+Both Mac architectures were signed and notarized. All seven published assets
+matched local sizes and SHA-256 hashes; the Mac manifest also matched every ZIP
+and DMG's SHA-512. The installed Mac app read the live Grok Bot 0.77.0 roster and
+completed the toolbar refresh successfully without sending a message.
+
 ## Updater implementation and history
 
 GrokDeck 0.2.0 checks its private GitHub releases separately from Grok Bot's official release feed. Both checks run at launch and every six hours when the release-check preference is enabled. Settings exposes separate manual checks. A newer GrokDeck release appears as an update banner.
