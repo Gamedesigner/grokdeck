@@ -19,6 +19,7 @@ app.whenReady().then(async()=>{
  const guardedSession=async()=>{const value=await session();if(value.accountScope!==initialScope||value.teamId!==initialTeam)throw new Error('account-changed');return value;};
  const resolveConnection=createConnectionResolver({session:guardedSession,currentAccountScope:guardedScope});
  const gateway=createGateway({resolveConnection,getAccountScope:guardedScope});
+ gateway.runtimeSettings=(await import('./organization.mjs')).createRuntimeSettings({session:guardedSession});
  gateway.sourceVersion=()=>sourceVersion();
  await resolveConnection();
  await gateway.roster();

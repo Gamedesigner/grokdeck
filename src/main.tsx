@@ -1,4 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import {ComputerViewer} from './ComputerViewer';
+import {AgentEditor} from './AgentEditor';
+import {OverviewGroups} from './OverviewGroups';
 import { createRoot } from "react-dom/client";
 import {
   ArrowDown,
@@ -119,7 +122,7 @@ function Avatar({ agent, small = false, live = false }: { agent: Agent; small?: 
     if(!element.current||typeof IntersectionObserver==='undefined'){load();return()=>{active=false;};}
     const observer=new IntersectionObserver(entries=>{if(entries.some(entry=>entry.isIntersecting)){observer.disconnect();load();}},{rootMargin:'100px'});
     observer.observe(element.current);return()=>{active=false;observer.disconnect();};
-  },[agent.id,live]);
+  },[agent,live]);
   return (
     <span
       ref={element}
@@ -131,6 +134,16 @@ function Avatar({ agent, small = false, live = false }: { agent: Agent; small?: 
   );
 }
 function App() {
+  const [syncedOrganization,setSyncedOrganization]=useState<import('./types').Organization|null>(null);
+  const [organizationBusy,setOrganizationBusy]=useState(false);
+  const organizationBusyRef=useRef(false);
+  const [organizationError,setOrganizationError]=useState('');
+  const [agentSort,setAgentSort]=useState('recent');
+  const [agentFilter,setAgentFilter]=useState('all');
+  const [groupFilter,setGroupFilter]=useState('all');
+  const [viewer,setViewer]=useState<{id:string;name:string;windowIndex?:number|null}|null>(null);
+  const [editingAgent,setEditingAgent]=useState<string|null>(null);
+  const [startingComputer,setStartingComputer]=useState<string|null>(null);
   const [data, setData] = useState<Snapshot>(empty),
     [prefs, setPrefs] = useState<Preferences>(defaults),
     [loading, setLoading] = useState(true),
@@ -362,9 +375,24 @@ function App() {
   useEffect(() => {
     if (palette) searchInput.current?.focus();
   }, [palette]);
+  useEffect(()=>{
+    if(!live||!bridge?.organization){setSyncedOrganization(null);return;}
+    let active=true;
+    const refresh=async()=>{if(organizationBusyRef.current)return;try{const result=await bridge.organization!();if(active&&!organizationBusyRef.current){setSyncedOrganization(result.organization);setOrganizationError('');}}catch{if(active&&!organizationBusyRef.current)setOrganizationError('Group sync unavailable. Open Grok Bot or reconnect live before editing groups.');}};
+    void refresh();const timer=setInterval(refresh,15000);return()=>{active=false;clearInterval(timer);};
+  },[live]);
+  const changeOrganization=async(next:import('./types').Organization)=>{
+    if(!syncedOrganization||!bridge?.updateOrganization||organizationBusyRef.current)return;
+    organizationBusyRef.current=true;setOrganizationBusy(true);setOrganizationError('');
+    try{const result=await bridge.updateOrganization(next,syncedOrganization);setSyncedOrganization(result.organization);}
+    catch{setOrganizationError('Group changes could not be fully confirmed. Reloading from Grok Bot; check the result before trying again.');try{setSyncedOrganization((await bridge.organization!()).organization);}catch{setSyncedOrganization(null);}}
+    finally{organizationBusyRef.current=false;setOrganizationBusy(false);}
+  };
+  const sections=syncedOrganization?.sections??data.sections;
+  const organization=syncedOrganization??{sections,pins:[...new Set([...prefs.pins,...data.agents.filter(a=>a.pinned).map(a=>a.id)])]};
   const agents = useMemo(
-    () => [...data.agents].sort((a, b) => b.lastActivityAt - a.lastActivityAt),
-    [data.agents],
+    () => data.agents.map(a=>{const group=sections.find(s=>s.agentIds.includes(a.id));return {...a,section:group?.name||'Ungrouped',sectionId:group?.id||'__unassigned__'};}).sort((a,b)=>b.lastActivityAt-a.lastActivityAt),
+    [data.agents,sections],
   );
   const agent = agents.find((a) => a.id === selected);
   useEffect(() => {
@@ -411,7 +439,7 @@ function App() {
       } else setPendingSends(current=>({...current,[a.id]:{...pending,status:receipt.status}}));
     }catch {setError('Acceptance is still unknown. Check the discussion in Grok Bot before composing another message.');}
   };
-  const pinned = (a: Agent) => prefs.pins.includes(a.id) || a.pinned;
+  const pinned = (a: Agent) => organization.pins.includes(a.id);
   const unread = (a: Agent) =>
     a.hasUnread && (prefs.seen[a.id] || 0) < a.lastActivityAt;
   const attention = agents.filter((a) => a.awaitingResponse || unread(a));
@@ -431,17 +459,7 @@ function App() {
     });
     setPalette(false);
   };
-  const togglePin = (a: Agent) => {
-    if (a.pinned && !prefs.pins.includes(a.id)) {
-      announce("Pinned in Grok Bot. Manage that pin in Grok Bot.");
-      return;
-    }
-    save({
-      pins: prefs.pins.includes(a.id)
-        ? prefs.pins.filter((id) => id !== a.id)
-        : [...prefs.pins, a.id],
-    });
-  };
+  const togglePin = (a:Agent) => {if(!syncedOrganization){announce('Connect live to sync pins with Grok Bot.');return;}void changeOrganization({...organization,pins:pinned(a)?organization.pins.filter(id=>id!==a.id):[...organization.pins,a.id]});};
   const match = (a: Agent) =>
     !query ||
     `${a.name} ${a.description} ${a.section} ${a.preview}`
@@ -452,6 +470,7 @@ function App() {
     );
   const filtered = agents
     .filter(match)
+    .filter(a=>view!=='all'||((groupFilter==='all'||a.sectionId===groupFilter)&&(agentFilter==='all'||agentFilter==='pinned'&&pinned(a)||agentFilter==='unread'&&unread(a)||agentFilter==='waiting'&&a.awaitingResponse)))
     .filter((a) =>
       view === "attention"
         ? a.awaitingResponse || unread(a)
@@ -462,7 +481,7 @@ function App() {
             : view.startsWith("section:")
               ? a.sectionId === view.slice(8)
               : true,
-    );
+    ).sort((a,b)=>view==='all'?(agentSort==='name'?a.name.localeCompare(b.name):agentSort==='oldest'?a.lastActivityAt-b.lastActivityAt:agentSort==='group'?a.section.localeCompare(b.section)||a.name.localeCompare(b.name):b.lastActivityAt-a.lastActivityAt):0);
   const title =
     view === "computers" ? "Computers" : view === "overview"
       ? "Your deck"
@@ -473,7 +492,7 @@ function App() {
           : view === "history"
             ? "Discussion library"
             : view.startsWith("section:")
-              ? data.sections.find((s) => s.id === view.slice(8))?.name ||
+              ? sections.find((s) => s.id === view.slice(8))?.name ||
                 "Section"
               : "All agents";
   const recent = prefs.recents
@@ -549,6 +568,8 @@ function App() {
   );
   return (
     <div className="app-shell">
+      {viewer&&bridge&&<ComputerViewer bridge={bridge} {...viewer} onClose={()=>setViewer(null)}/>}
+      {editingAgent&&bridge&&<AgentEditor bridge={bridge} id={editingAgent} onClose={()=>setEditingAgent(null)} onSaved={()=>{avatarRequests.delete(editingAgent);void connectLive();}}/>}
       <aside className="sidebar">
         <div className="window-space" />
         <div className="brand">
@@ -585,10 +606,10 @@ function App() {
           {nav("history", "Discussion library", <BookOpen size={17} />)}
         </nav>
         <div className="nav-label section-heading">
-          SECTIONS<span>{data.sections.length}</span>
+          SECTIONS<span>{sections.length}</span>
         </div>
         <nav className="section-nav" aria-label="Agent sections">
-          {data.sections.map((s) => (
+          {sections.map((s) => (
             <React.Fragment key={s.id}>
               {nav(
                 `section:${s.id}`,
@@ -598,7 +619,7 @@ function App() {
               )}
             </React.Fragment>
           ))}
-          {!data.sections.length && (
+          {!sections.length && (
             <p className="sidebar-hint">
               Your Grok Bot sections
               <br />
@@ -756,7 +777,7 @@ function App() {
                   <span className="title-period">.</span>
                 </h1>
                 <p>
-                  {view === "computers" ? "Read current computer status without starting or changing a computer." : view === "overview"
+                  {view === "computers" ? "Open, control or start your agents’ computers." : view === "overview"
                     ? "A little less noise. A clearer view of what matters."
                     : view === "history"
                       ? "Pick up a thought. Find the discussion behind it."
@@ -775,16 +796,20 @@ function App() {
               )}
             </div>
             {view==='computers' ? <section className="computers-view" aria-label="Computers">
-              {!live ? <div className="empty-state"><Monitor size={28}/><h2>Connecting to your computers</h2><p>Computer status is read from your Mac bridge.</p><button className="button primary" disabled={liveConnecting||!bridge?.connectLive} onClick={()=>void connectLive()}>Retry connection</button></div> : <>
+              {!live ? <div className="empty-state"><Monitor size={28}/><h2>Connecting to your computers</h2><p>Computer status is read through your local helper.</p><button className="button primary" disabled={liveConnecting||!bridge?.connectLive} onClick={()=>void connectLive()}>Retry connection</button></div> : <>
                 <div className="list-heading"><label><input type="checkbox" checked={activeComputersOnly} onChange={e=>setActiveComputersOnly(e.target.checked)}/> Active only</label><button className="button small-button" disabled={computersLoading} onClick={()=>void refreshComputers()}><RefreshCw size={14}/>{computersLoading?'Reading status…':'Refresh computers'}</button></div>
                 {computersError&&<p role="alert">{computersError}</p>}
                 {computers&&<p className="search-caption">Bots with running computers: {computers.computers.filter(c=>c.state==='running').length} · Bots checked: {computers.computers.length} · Status unavailable: {computers.computers.filter(c=>c.state==='unknown').length} · {computers.complete?'Complete result':'Partial result'} · {date(computers.checkedAt)}</p>}
                 {(computers?.computers||[]).filter(c=>!activeComputersOnly||c.state==='running').map(computer=><article className="computer-row" key={computer.agentId}>
                   <Monitor size={21}/><div><strong>{computer.name}</strong><span className="computer-state">{computer.state==='running'?'Running':computer.state==='hibernated'?'Sleeping':computer.state==='absent'?'No computer':'Status unavailable'}</span>{computer.windows.map(window=><p key={window.index}>{window.label||`Window ${window.index+1}`}</p>)}{computer.error&&<p>Status could not be read for this agent.</p>}</div>
                   <button className="button small-button" disabled={!agents.some(a=>a.id===computer.agentId)} onClick={()=>{const target=agents.find(a=>a.id===computer.agentId);if(target){setView('all');openAgent(target);}}}>Open chat <ArrowUpRight size={14}/></button>
+                  {computer.state==='running'&&bridge?.openViewer&&<button className="button small-button" onClick={()=>setViewer({id:computer.agentId,name:computer.name})}>View computer</button>}
+                  {computer.state==='running'&&computer.windows.map(w=><button className="button small-button" key={w.index} onClick={()=>setViewer({id:computer.agentId,name:computer.name,windowIndex:w.index})}>{w.label||`Window ${w.index+1}`}</button>)}
+                  {['absent','hibernated'].includes(computer.state)&&bridge?.startComputer&&<button className="button small-button" disabled={startingComputer!==null} onClick={async()=>{setStartingComputer(computer.agentId);try{await bridge.startComputer!(computer.agentId);await refreshComputers();}catch{setComputersError('Start could not be confirmed. Refresh status or open Grok Bot before trying again.');}finally{setStartingComputer(null);}}}>{startingComputer===computer.agentId?'Starting…':'Start computer'}</button>}
+                  <button className="button small-button" onClick={()=>void bridge?.openAgent(computer.agentId)}>Open in Grok Bot</button>
                 </article>)}
                 {!computersLoading&&computers&&!computers.computers.some(c=>!activeComputersOnly||c.state==='running')&&<div className="empty-state"><h2>{activeComputersOnly?'No running bot computers observed':'No computers returned'}</h2><p>{computers.complete&&!computers.computers.some(c=>c.state==='unknown')?'Turn off Active only to include sleeping computers.':'Some statuses are unavailable. Refresh or turn off Active only to review them.'}</p></div>}
-                <p className="search-caption">Status is shown per bot; underlying computers may be shared. This view reads status only. Starting computers and opening their screens are not available here.</p>
+                <p className="search-caption">Status is shown per bot; underlying computers may be shared. Control is enabled when you open a screen. Starting a computer may use your Grok Bot account’s resources.</p>
               </>}
             </section> : loading && !data.agents.length ? (
               <div className="empty-state">
@@ -827,105 +852,14 @@ function App() {
               </div>
             ) : (
               <>
-                {view === "overview" && (
-                  <>
-                    <div className="stats-grid">
-                      <button
-                        className="stat-card"
-                        onClick={() => setView("all")}
-                      >
-                        <span>
-                          <MessageSquare size={16} />
-                          Your agents
-                        </span>
-                        <strong>
-                          {agents.length.toString().padStart(2, "0")}
-                        </strong>
-                        <small>{live ? "Signed-in account" : `Across ${data.sections.length} sections`}</small>
-                      </button>
-                      <button
-                        className="stat-card attention-stat"
-                        onClick={() => setView("attention")}
-                      >
-                        <span>
-                          <Bell size={16} />
-                          Needs attention
-                        </span>
-                        <strong>
-                          {attention.length.toString().padStart(2, "0")}
-                          <i />
-                        </strong>
-                        <small>{live ? "Latest gateway roster" : "Unread or awaiting a reply · cached"}</small>
-                      </button>
-                      <button
-                        className="stat-card"
-                        onClick={() => setView("history")}
-                      >
-                        <span>
-                          <BookOpen size={16} />
-                          {live ? "Loaded discussions" : "Discussion library"}
-                        </span>
-                        <strong>
-                          {cachedCount.toString().padStart(2, "0")}
-                        </strong>
-                        <small>
-                          {messageCount.toLocaleString()} {live ? "loaded entries" : "cached entries"}
-                        </small>
-                      </button>
-                    </div>
-                    {!agent && (
-                      <div className="catchup-card">
-                        <div className="catchup-icon">
-                          <Sparkles size={20} />
-                        </div>
-                        <div>
-                          <h3>Your next starting point</h3>
-                          <p>
-                            {attention.length
-                              ? `${attention.length} agents have unread results or ${live ? "a request" : "a cached request"} for you. Start there, or return to a recent discussion.`
-                              : `You’re caught up with the ${live ? "gateway" : "cached"} roster. Revisit a discussion or explore another agent.`}
-                          </p>
-                          <span>
-                            {live ? "Gateway roster checked " : "Based on the local roster · last written "}
-                            {age(data.source.cacheUpdatedAt)}
-                          </span>
-                        </div>
-                        <button
-                          className="icon-button"
-                          aria-label="View agents needing attention"
-                          onClick={() => setView("attention")}
-                        >
-                          <ArrowUpRight size={20} />
-                        </button>
-                      </div>
-                    )}
-                    {recent.length > 0 && !agent && (
-                      <>
-                        <div className="block-heading">
-                          <h2>Pick up where you left off</h2>
-                          <span>RECENT IN GROKDECK</span>
-                        </div>
-                        <div className="recent-cards">
-                          {recent.slice(0, 3).map((a) => (
-                            <button
-                              key={a.id}
-                              className="recent-card"
-                              onClick={() => openAgent(a)}
-                            >
-                              <Avatar agent={a} live={live} />
-                              <strong>{a.name}</strong>
-                              <span>{a.preview}</span>
-                              <small>
-                                {age(a.lastActivityAt)}
-                                <ArrowUpRight size={14} />
-                              </small>
-                            </button>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </>
-                )}
+                {view==='overview'&&organizationError&&<p role="alert">{organizationError}</p>}
+                {view==='overview'&&<OverviewGroups disabled={!syncedOrganization||organizationBusy}  agents={agents.filter(match)} organization={organization} onChange={organization=>void changeOrganization(organization)} onOpen={openAgent} renderAvatar={a=><Avatar agent={a} small live={live}/>}/>}
+                {view!=='overview'&&<>
+                {view==='all'&&<div className="agent-filters">
+                  <label>Sort<select aria-label="Sort agents" value={agentSort} onChange={e=>setAgentSort(e.target.value)}><option value="recent">Recent activity</option><option value="oldest">Oldest activity</option><option value="name">Name A–Z</option><option value="group">Group</option></select></label>
+                  <label>Status<select aria-label="Filter agents" value={agentFilter} onChange={e=>setAgentFilter(e.target.value)}><option value="all">All statuses</option><option value="unread">Unread</option><option value="waiting">Needs reply</option><option value="pinned">Pinned</option></select></label>
+                  <label>Group<select aria-label="Filter group" value={groupFilter} onChange={e=>setGroupFilter(e.target.value)}><option value="all">All groups</option>{sections.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}<option value="__unassigned__">Ungrouped</option></select></label>
+                </div>}
                 <div className="list-heading">
                   <h2>
                     {view === "overview"
@@ -996,6 +930,7 @@ function App() {
                     ))
                   )}
                 </div>
+                </>}
                 <div className="list-footer">
                   <span>
                     {demo
@@ -1053,6 +988,8 @@ function App() {
                 </button>
               </div>
               <div className="discussion-toolbar">
+                {live&&bridge?.openViewer&&<button className="icon-button" aria-label="Open agent computer" title="Open computer" onClick={()=>setViewer({id:agent.id,name:agent.name})}><Monitor size={17}/></button>}
+                {live&&bridge?.agentProfile&&<button className="button small-button" onClick={()=>setEditingAgent(agent.id)}>Edit agent</button>}
                 <button className="icon-button" aria-label="Search discussion" title="Search discussion" aria-expanded={discussionSearchOpen} aria-controls="discussion-search-field" onClick={()=>{setDiscussionSearchOpen(open=>!open);setChatQuery('');}}><Search size={17}/></button>
                 {discussionSearchOpen && <div className="filter-input" id="discussion-search-field">
                   <input autoFocus aria-label="Search this discussion" placeholder="Find in discussion…" value={chatQuery} onChange={e=>setChatQuery(e.target.value)} onKeyDown={e=>{if(e.key==='Escape'){setDiscussionSearchOpen(false);setChatQuery('');}}}/>

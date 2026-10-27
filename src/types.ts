@@ -60,6 +60,7 @@ export interface Preferences {
   seen: Record<string, number>;
   drafts: Record<string, string>;
 }
+export interface Organization {sections:{id:string;name:string;agentIds:string[]}[];pins:string[]}
 export interface SendReceipt {
   apiVersion: number;
   clientNonce: string;
@@ -74,6 +75,15 @@ export interface ComputersResponse {
 }
 export interface PhoneHostStatus {active:boolean;endpoint:string|null;host:string|null;hosts?:{name:string;address:string}[]}
 export interface Bridge {
+  organization?():Promise<{organization:Organization}>;
+  updateOrganization?(organization:Organization,expected:Organization):Promise<{organization:Organization}>;
+  openViewer?(id:string,window?:number|null):Promise<{id:string}>;
+  exchangeViewer?(id:string,sequence:number,data:string):Promise<{sequence:number;data:string;closed:boolean}>;
+  closeViewer?(id:string):Promise<unknown>;
+  agentProfile?(id:string):Promise<{profile:AgentProfile}>;
+  updateAgentProfile?(id:string,profile:AgentProfile,expected:AgentProfile):Promise<{profile:AgentProfile}>;
+  setAgentAvatar?(id:string,png:string|null):Promise<unknown>;
+  startComputer?(id:string):Promise<unknown>;
   phoneHosts?():Promise<PhoneHostStatus>;
   startPhone?(host:string):Promise<PhoneHostStatus>;
   stopPhone?():Promise<PhoneHostStatus>;
@@ -109,6 +119,7 @@ export interface Bridge {
     supportedSourceVersion: string;
   }>;
 }
+export interface AgentProfile {name:string;title:string;description:string}
 declare global {
   interface Window {
     grokdeck?: Bridge;

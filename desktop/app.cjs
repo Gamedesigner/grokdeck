@@ -25,8 +25,11 @@ let appUpdates,phoneHost;
 const liveMessages = new Map();
 async function getLiveSnapshot() {
   const response = await liveClient.roster();
-  return {agents: response.agents.map(a => ({...a, color: '#8a9bff', sectionId: '__live__', pinned:false,
-    unreadCount:0, messages:liveMessages.get(a.id)||[]})), sections:[], source:{...response.source,path:''}, warnings:response.warnings||[]};
+  const cached=await adapter.readCache();
+  const ids=new Set(response.agents.map(a=>a.id));
+  const sections=cached.sections.map(s=>({...s,agentIds:s.agentIds.filter(id=>ids.has(id))})).filter(s=>s.agentIds.length);
+  return {agents: response.agents.map(a => {const old=cached.agents.find(row=>row.id===a.id),section=sections.find(s=>s.agentIds.includes(a.id));return {...a, color: old?.color||'#8a9bff', section:section?.name||'Unassigned',sectionId:section?.id||'__unassigned__', pinned:old?.pinned===true,
+    unreadCount:0, messages:liveMessages.get(a.id)||[]};}), sections, source:{...response.source,path:''}, warnings:response.warnings||[]};
 }
 function requireLive() {if(!liveEnabled)throw new Error('Connect live first');}
 
@@ -213,6 +216,15 @@ async function boot() {
   });
   register("deck:disconnect-live", async () => {liveEnabled=false;liveMessages.clear();return getSnapshot();});
   register("deck:avatar", async id => {requireLive();return liveClient.avatar(id);});
+  register('deck:organization',async()=>{requireLive();return liveClient.organization();});
+  register('deck:organization-update',async(organization,expected)=>{requireLive();return liveClient.updateOrganization(organization,expected);});
+  register('deck:viewer-open',async(id,window)=>{requireLive();return liveClient.openViewer(id,window);});
+  register('deck:viewer-exchange',async(id,sequence,data)=>{requireLive();return liveClient.exchangeViewer(id,sequence,data);});
+  register('deck:viewer-close',async id=>liveClient.closeViewer(id));
+  register('deck:profile',async id=>{requireLive();return liveClient.profile(id);});
+  register('deck:profile-update',async(id,profile,expected)=>{requireLive();return liveClient.updateProfile(id,profile,expected);});
+  register('deck:avatar-update',async(id,png)=>{requireLive();return liveClient.setAvatar(id,png);});
+  register('deck:computer-start',async id=>{requireLive();return liveClient.startComputer(id);});
   register("deck:computers", async () => {requireLive();return liveClient.computers();});
   register("deck:live-messages", async id => {requireLive();const result=await liveClient.messages(id);liveMessages.set(id,result.messages);return result;});
   register("deck:send", async (id,prompt,nonce,replyToId) => {

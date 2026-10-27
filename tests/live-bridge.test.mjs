@@ -44,5 +44,5 @@ test('computer and avatar routes are paired read-only views without remote crede
  const avatar=await(await request('/v1/agents/agent-one/avatar')).json();assert.equal(avatar.mimeType,'image/png');assert.equal(avatar.dataBase64,image);
  assert.equal((await request('/v1/agents/not-in-account/avatar')).status,404);
  assert.equal((await request('/v1/computers',{})).status,405);
- assert.equal((await request('/v1/agents/agent-one/avatar',{})).status,405);
+ assert.equal((await request('/v1/agents/agent-one/avatar',{})).status,400);
 });

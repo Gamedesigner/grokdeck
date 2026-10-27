@@ -23,6 +23,15 @@ function createLiveClient({fetchImpl,credentialFile=path.join(os.homedir(),'.gro
  }
  function receipt(reply,nonce){if(reply.clientNonce!==nonce||!['accepted','rejected','unknown','pending'].includes(reply.status)||![true,false,null].includes(reply.accepted))throw new Error('Invalid send receipt');return reply;}
  return {
+  async organization(){return request('organization');},
+  async updateOrganization(organization,expected){return request('organization',{organization,expected},60000);},
+  async openViewer(id,window=null){if(window!==null&&(!Number.isInteger(window)||window<0||window>63))throw new Error('Invalid window');return request(`agents/${validId(id)}/viewer`,{window});},
+  async exchangeViewer(id,sequence,data){if(!/^[A-Za-z0-9_-]{32}$/.test(id)||!Number.isSafeInteger(sequence)||sequence<0||typeof data!=='string'||data.length>128*1024)throw new Error('Invalid viewer request');return request(`viewers/${id}/exchange`,{sequence,data});},
+  async closeViewer(id){if(!/^[A-Za-z0-9_-]{32}$/.test(id))throw new Error('Invalid viewer');return request(`viewers/${id}/close`,{});},
+  async profile(id){return request(`agents/${validId(id)}/profile`);},
+  async updateProfile(id,profile,expected){return request(`agents/${validId(id)}/profile`,{profile,expected});},
+  async setAvatar(id,pngBase64){return request(`agents/${validId(id)}/avatar`,{pngBase64});},
+  async startComputer(id){return request(`agents/${validId(id)}/computer`,{},65000);},
   async health(){const reply=await request('health',undefined,2000);if(reply.live!==true||reply.readOnly!==false)throw new Error('Live bridge is not enabled');return {live:true};},
   async avatar(id){
     const reply=await request(`agents/${validId(id)}/avatar`);

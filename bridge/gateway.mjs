@@ -1,4 +1,5 @@
 import { viewerTarget } from './viewer-target.mjs';
+import {validOrganization,normalizeOrganization} from './organization.mjs';
 import { createHash } from "node:crypto";
 import { AsyncLocalStorage } from "node:async_hooks";
 
@@ -193,6 +194,57 @@ export function createGateway({ resolveConnection, getAccountScope, fetchImpl = 
       return command("getForeverBoxStatus", { id:target }, (r) => r===null || record(r) && r.agentId===target &&
         ["absent","hibernated","running"].includes(r.state) && (r.vncUrl===null||typeof r.vncUrl==="string") &&
         (r.windows===undefined||Array.isArray(r.windows)&&r.windows.length<=64&&r.windows.every(w=>record(w)&&Number.isSafeInteger(w.windowIndex)&&w.windowIndex>=0&&w.windowIndex<=63&&typeof w.vncUrl==="string")),{signal,timeout:2000});
+    },
+    async profile(id) {
+      agentId(id);
+      const row=(await api.roster()).find(a=>a.id===id&&!a.isRemovedFromSidebar);
+      if(!row)throw new GatewayError('invalid_request','Agent unavailable.');
+      return {name:row.name,description:typeof row.description==='string'?row.description:'',title:typeof row.title==='string'?row.title:''};
+    },
+    async organization() {
+      const runtime=await api.runtimeSettings();
+      const host=await command('getHostSettings',{},record);
+      const value=normalizeOrganization(host.sidebarSections??runtime.sections,runtime.pins);
+      if(!validOrganization(value))throw invalid();return value;
+    },
+    async updateOrganization(value,expected) {
+      if(!validOrganization(value)||!validOrganization(expected))throw new GatewayError('invalid_request','Invalid groups.');
+      const current=await api.organization();
+      if(JSON.stringify(current)!==JSON.stringify(expected))throw new GatewayError('invalid_request','Groups changed. Refresh before trying again.');
+      const roster=await api.roster(),known=new Set(roster.filter(a=>!a.isRemovedFromSidebar).map(a=>a.id));
+      // Preserve stale references already present, but never add an unknown agent.
+      const existing=new Set([...current.pins,...current.sections.flatMap(s=>s.agentIds)]);
+      if([...value.pins,...value.sections.flatMap(s=>s.agentIds)].some(id=>!known.has(id)&&!existing.has(id)))throw new GatewayError('invalid_request','Agent unavailable.');
+      if(JSON.stringify(value.sections)!==JSON.stringify(current.sections))await command('setHostSettings',{sidebarSections:value.sections},record);
+      const saved=await api.runtimeSettings(value);
+      if(JSON.stringify(saved)!==JSON.stringify(value))throw invalid();
+      const confirmed=await api.organization();if(JSON.stringify(confirmed)!==JSON.stringify(value))throw invalid();return confirmed;
+    },
+    async updateProfile(id,profile,expected) {
+      const valid=p=>record(p)&&Object.keys(p).length===3&&typeof p.name==='string'&&p.name.trim().length>0&&p.name.length<=200&&typeof p.title==='string'&&p.title.length<=500&&typeof p.description==='string'&&p.description.length<=50000;
+      if(!valid(profile)||!valid(expected))throw new GatewayError('invalid_request','Invalid agent profile.');
+      const current=await api.profile(id);
+      if(Object.keys(current).some(k=>current[k]!==expected[k]))throw new GatewayError('invalid_request','Profile changed. Reload before saving.');
+      const editedFields=Object.keys(current).filter(k=>current[k]!==profile[k]);
+      if(editedFields.length)await command('updateAgent',{id,profile,editedFields},()=>true);
+      const saved=await api.profile(id);
+      if(Object.keys(saved).some(k=>saved[k]!==profile[k]))throw invalid();
+      return saved;
+    },
+    async setAvatar(id,pngBase64) {
+      await api.profile(id);
+      if(pngBase64!==null){
+        if(typeof pngBase64!=='string'||pngBase64.length>180000||! /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(pngBase64))throw new GatewayError('invalid_request','Invalid PNG image.');
+        const bytes=Buffer.from(pngBase64,'base64');
+        if(bytes.length<33||!bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]))||bytes.toString('ascii',12,16)!=='IHDR'||bytes.readUInt32BE(16)<1||bytes.readUInt32BE(16)>512||bytes.readUInt32BE(20)<1||bytes.readUInt32BE(20)>512)throw new GatewayError('invalid_request','Invalid PNG image.');
+      }
+      await command('setAgentAvatarBytes',{id,pngBase64},()=>true);
+      return {updated:true};
+    },
+    async startComputer(id) {
+      await api.profile(id);
+      await command('ensureForeverBox',{id},()=>true,{timeout:60000});
+      return {requested:true};
     },
     async viewer(id,windowIndex) {
       const connection=await resolve();

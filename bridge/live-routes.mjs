@@ -6,6 +6,13 @@ const text=v=>typeof v==='string'?v:'';
 const idPattern='[A-Za-z0-9_-]{1,128}';
 const uuidPattern='[0-9a-fA-F-]{36}';
 export async function liveRoute({req,url,respond,gateway,viewers}) {
+  if(url.pathname==='/v1/organization'){
+    if(req.method==='GET')return respond(200,{apiVersion:1,organization:await gateway.organization()});
+    if(req.method!=='POST')return respond(405,{error:'Method not allowed.'});
+    const body=await requestJSON(req);
+    if(Object.keys(body).some(k=>!['organization','expected'].includes(k)))return respond(400,{error:'Invalid groups.'});
+    return respond(200,{apiVersion:1,organization:await gateway.updateOrganization(body.organization,body.expected)});
+  }
   if(url.pathname==='/v1/health' && req.method==='GET') {
     await gateway.status();
     return respond(200,{apiVersion:1,name:'GrokDeck Bridge',readOnly:false,live:true});
@@ -13,6 +20,23 @@ export async function liveRoute({req,url,respond,gateway,viewers}) {
   if(url.pathname==='/v1/computers'){
     if(req.method!=='GET')return respond(405,{error:'Method not allowed.'});
     return respond(200,await loadComputers(gateway));
+  }
+  const edit=url.pathname.match(/^\/v1\/agents\/([A-Za-z0-9_-]{1,128})\/(profile|avatar|computer)$/);
+  if(edit&&(edit[2]!=='avatar'||req.method==='POST')){
+    const [,id,action]=edit;
+    if(action==='profile'&&req.method==='GET')return respond(200,{apiVersion:1,profile:await gateway.profile(id)});
+    if(req.method!=='POST')return respond(405,{error:'Method not allowed.'});
+    const body=await requestJSON(req);
+    if(action==='profile'){
+      if(Object.keys(body).some(k=>!['profile','expected'].includes(k)))return respond(400,{error:'Invalid profile request.'});
+      return respond(200,{apiVersion:1,profile:await gateway.updateProfile(id,body.profile,body.expected)});
+    }
+    if(action==='avatar'){
+      if(Object.keys(body).length!==1||!Object.hasOwn(body,'pngBase64'))return respond(400,{error:'Invalid image request.'});
+      return respond(200,{apiVersion:1,...await gateway.setAvatar(id,body.pngBase64)});
+    }
+    if(Object.keys(body).length)return respond(400,{error:'Invalid computer request.'});
+    return respond(200,{apiVersion:1,...await gateway.startComputer(id)});
   }
   const viewerOpen=url.pathname.match(/^\/v1\/agents\/([A-Za-z0-9_-]{1,128})\/viewer$/);
   const viewerSession=url.pathname.match(/^\/v1\/viewers\/([A-Za-z0-9_-]{32})\/(exchange|close)$/);

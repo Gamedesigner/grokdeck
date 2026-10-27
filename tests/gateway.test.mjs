@@ -170,3 +170,28 @@ test('reply sends preserve Unicode and bind the nonce to reply context',async()=
  await assert.rejects(gateway.send({...message,prompt:'👍🙂❤️',replyToId:'message-2',replyQuote:'Other'}),{code:'nonce_reused'});
  assert.equal(bodies.length,1);
 });
+
+test('profile edits check membership and stale values before any mutation',async()=>{
+ let profile={name:'Desk',title:'Helper',description:'Original'};const writes=[];
+ const gateway=create(async(url,options)=>{
+  const method=url.split('/').pop(),body=JSON.parse(options.body);
+  if(method==='listAgents')return json([{id:'agent-1',...profile}]);
+  writes.push({method,body});if(method==='updateAgent')profile={...body.profile};return json(null);
+ });
+ const original=await gateway.profile('agent-1');
+ const changed={...original,name:'New name'};
+ assert.deepEqual(await gateway.updateProfile('agent-1',changed,original),changed);
+ assert.deepEqual(writes[0],{method:'updateAgent',body:{id:'agent-1',profile:changed,editedFields:['name']}});
+ await assert.rejects(gateway.updateProfile('agent-1',original,original));
+ await assert.rejects(gateway.updateProfile('missing',changed,changed));
+ await assert.rejects(gateway.updateProfile('agent-1',{...changed,arbitrary:true},changed));
+ assert.equal(writes.length,1);
+ await gateway.startComputer('agent-1');assert.equal(writes[1].method,'ensureForeverBox');
+ await assert.rejects(gateway.startComputer('missing'));assert.equal(writes.length,2);
+});
+test('avatar writes reject unsupported images and cross-account targets',async()=>{
+ const writes=[];const gateway=create(async(url,options)=>{if(url.endsWith('/listAgents'))return json([{id:'agent-1',name:'Desk'}]);writes.push(JSON.parse(options.body));return json(null);});
+ for(const value of ['<svg/>',Buffer.from('not png').toString('base64'),'a'.repeat(180004),undefined])await assert.rejects(gateway.setAvatar('agent-1',value));
+ await assert.rejects(gateway.setAvatar('missing',null));assert.equal(writes.length,0);
+ await gateway.setAvatar('agent-1',null);assert.deepEqual(writes,[{id:'agent-1',pngBase64:null}]);
+});

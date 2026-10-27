@@ -1,5 +1,14 @@
 const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("grokdeck", {
+  organization:()=>ipcRenderer.invoke('deck:organization'),
+  updateOrganization:(organization,expected)=>ipcRenderer.invoke('deck:organization-update',organization,expected),
+  openViewer:(id,window=null)=>ipcRenderer.invoke('deck:viewer-open',id,window),
+  exchangeViewer:(id,sequence,data)=>ipcRenderer.invoke('deck:viewer-exchange',id,sequence,data),
+  closeViewer:id=>ipcRenderer.invoke('deck:viewer-close',id),
+  agentProfile:id=>ipcRenderer.invoke('deck:profile',id),
+  updateAgentProfile:(id,profile,expected)=>ipcRenderer.invoke('deck:profile-update',id,profile,expected),
+  setAgentAvatar:(id,png)=>ipcRenderer.invoke('deck:avatar-update',id,png),
+  startComputer:id=>ipcRenderer.invoke('deck:computer-start',id),
   checkAppUpdates: (force=false)=>ipcRenderer.invoke('deck:app-updates',force),
   appUpdateStatus: ()=>ipcRenderer.invoke('deck:app-update-status'),
   downloadUpdate: ()=>ipcRenderer.invoke('deck:download-update'),
